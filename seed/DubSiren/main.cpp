@@ -152,7 +152,7 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
   for (size_t i = 0; i < size; i++) {
     float in_left = IN_L[i];
     float in_right = IN_R[i];
-    low_high_pass.ApplyFilter(in_left, in_right);
+    low_high_pass.ApplyFilterStereo(in_left, in_right);
 
     float adsr_vol = adsr.Process(siren_active);
     float extern_echo_adsr_value = extern_echo_adsr.Process(extern_delay_in);
@@ -174,7 +174,9 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
     const float sample = sample_manager.GetSample();
     float sig = osc.Process() + sample;
     sig *= amp;
-    float delay_sig = delay.Process(sig + echo_in_mono) * delay_mix;
+    float delay_input = sig + echo_in_mono;
+    low_high_pass.ApplyFilterEcho(delay_input);
+    float delay_sig = delay.Process(delay_input) * delay_mix;
 
     float out_left = sig + delay_sig;
     float out_right = sig + delay_sig;
