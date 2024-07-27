@@ -130,6 +130,7 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
   }
 
   low_high_pass.SetFrequency(filter_val);
+  delay.SetFrequency(filter_val);
 
   delay.SetFeedback(delay_feedback);
   delay.SetTargetDelay(delay_length);
@@ -175,7 +176,6 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
     float sig = osc.Process() + sample;
     sig *= amp;
     float delay_input = sig + echo_in_mono;
-    low_high_pass.ApplyFilterEcho(delay_input);
     float delay_sig = delay.Process(delay_input) * delay_mix;
 
     float out_left = sig + delay_sig;
@@ -219,7 +219,7 @@ int main(void) {
   fadc.Init(&hw);
   switches.Init(&hw, hw.AudioCallbackRate());
 
-  delay.Init();
+  delay.Init(hw.AudioSampleRate());
   limiter_left.Init();
   limiter_right.Init();
   low_high_pass.Init(hw.AudioSampleRate());

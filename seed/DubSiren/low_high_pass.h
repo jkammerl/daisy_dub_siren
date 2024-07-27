@@ -10,7 +10,6 @@ class LowHighPass {
   void Init(float sample_rate) {
     left_filter_.Init(sample_rate);
     right_filter_.Init(sample_rate);
-    echo_filter_.Init(sample_rate);
   }
 
   void SetFrequency(float knob_value) {
@@ -20,7 +19,6 @@ class LowHighPass {
     if (fabs(knob_value - 0.5) < kWiggle) {
       left_filter_.SetFreq(cutoff_div_3);
       right_filter_.SetFreq(cutoff_div_3);
-      echo_filter_.SetFreq(cutoff_div_3);
       high_low_pass_ = false;
       return;
     }
@@ -34,7 +32,6 @@ class LowHighPass {
     const float cutoff_final = frequency * cutoff_div_3;
     left_filter_.SetFreq(cutoff_final);
     right_filter_.SetFreq(cutoff_final);
-    echo_filter_.SetFreq(cutoff_final);
   }
 
   void ApplyFilterStereo(float& left, float& right) {
@@ -50,20 +47,10 @@ class LowHighPass {
     }
   }
 
-  void ApplyFilterEcho(float& echo) {
-    echo_filter_.Process(echo);
-    if (high_low_pass_) {
-      echo = echo_filter_.High();
-    } else {
-      echo = echo_filter_.Low();
-    }
-  }
-
  private:
   bool high_low_pass_ = false;
   daisysp::Svf left_filter_;
   daisysp::Svf right_filter_;
-  daisysp::Svf echo_filter_;
 };
 
 #endif  // LOW_HIGH_PASS_
