@@ -50,7 +50,9 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
   for (int i = 0; i < kNumRecorder; ++i) {
     if (switches.Clicked(i)) {
       g_recorder[i]->Reset();
-      hw.PrintLine("Reset: %d", i);
+    }
+    if (switches.Clicked(i + kNumRecorder)) {
+      g_recorder[i]->Reset();
     }
   }
 
@@ -75,8 +77,8 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
     OUT_L[i] = out_sample;
     OUT_R[i] = out_sample;
 
-    OUT_L[i] += in_left * in_volume;
-    OUT_R[i] += in_right * in_volume;
+    OUT_L[i] += mono * in_volume;
+    OUT_R[i] += mono * in_volume;
   }
 
   limiter_left.ProcessBlock(OUT_L, size, /*pre_gain=*/1.0f);

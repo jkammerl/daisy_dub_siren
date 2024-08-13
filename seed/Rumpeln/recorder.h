@@ -56,7 +56,7 @@ class Recorder {
       return T(0);
     }
     const size_t read_idx = read_ptr_;
-    const float fraction = read_ptr_ - read_idx;
+    const float fraction = fmod(read_ptr_, 1.0f);
     const size_t read_pos = start_ptr_ + read_idx;
 
     read_ptr_ += speed;
