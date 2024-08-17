@@ -24,13 +24,13 @@ int SampleManager::Init(daisy::DaisySeed* seed) {
   return 0;
 }
 
-float SampleManager::GetSample() {
+bool SampleManager::GetSample(float* sample) {
   auto sample_player_new = sample_player_;
-  float sample_player_sum = 0.0f;
+  *sample = 0.0f;
   for (auto sample_player : *sample_player_new) {
-    sample_player_sum += s162f(sample_player->GetSample());
+    *sample += s162f(sample_player->GetSample());
   }
-  return sample_player_sum;
+  return !sample_player_new->empty();
 }
 
 int SampleManager::SdCardLoading() {

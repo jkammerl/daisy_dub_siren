@@ -23,7 +23,7 @@ class SampleManager {
 
   int TriggerSample(int sample_idx, bool retrigger);
 
-  float GetSample();
+  bool GetSample(float* sample);
 
   int SdCardLoading();
 

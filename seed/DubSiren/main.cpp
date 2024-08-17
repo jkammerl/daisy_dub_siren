@@ -11,6 +11,7 @@
 #include "daisysp.h"
 #include "delay.h"
 #include "low_high_pass.h"
+#include "sample_analyzer.h"
 #include "sample_manager.h"
 #include "switches.h"
 
@@ -172,7 +173,8 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
     float freq_lfo = std::min(std::max(freq_hz * lfo, 15.0f), 9000.f);
     osc.SetFreq(freq_lfo);
 
-    const float sample = sample_manager.GetSample();
+    float sample;
+    sample_manager.GetSample(&sample);
     float sig = osc.Process() + sample;
     sig *= amp;
     float delay_input = sig + echo_in_mono;

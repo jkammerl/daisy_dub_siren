@@ -24,6 +24,8 @@ LIBDAISY_DIR ?= ../../libDaisy/
 DAISYSP_DIR ?= ../../DaisySP/
 STMLIB_DIR ?= ../../stmlib
 
+C_SOURCES = $(wildcard ../../libDaisy/Drivers/CMSIS/DSP/Source/*/*.c)
+
 # Core location, and generic Makefile.
 SYSTEM_FILES_DIR = $(LIBDAISY_DIR)/core
 include $(SYSTEM_FILES_DIR)/Makefile
