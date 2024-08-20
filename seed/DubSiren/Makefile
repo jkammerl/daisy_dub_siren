@@ -8,9 +8,11 @@ CPP_SOURCES = main.cpp sdcard.cpp wav_file.cpp sample_player.cpp sample_manager.
 USE_DAISYSP_LGPL = 1
 
 USE_FATFS = 1
-_USE_FIND = 1
+#_USE_FIND = 1
 
-DEBUG=1
+#DEBUG=1
+
+APP_TYPE = BOOT_SRAM
 
 C_INCLUDES += \
 -I. \
@@ -23,6 +25,8 @@ C_INCLUDES += \
 LIBDAISY_DIR ?= ../../libDaisy/
 DAISYSP_DIR ?= ../../DaisySP/
 STMLIB_DIR ?= ../../stmlib
+
+CXXFLAGS=-O2
 
 C_SOURCES = $(wildcard ../../libDaisy/Drivers/CMSIS/DSP/Source/*/*.c)
 
