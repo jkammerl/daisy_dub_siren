@@ -2,55 +2,62 @@
 #ifndef LOW_HIGH_PASS_
 #define LOW_HIGH_PASS_
 
-#include "daisy_seed.h"
-#include "daisysp.h"
+#include "filter.h"
 
 class LowHighPass {
  public:
-  void Init(float sample_rate) {
-    left_filter_.Init(sample_rate);
-    right_filter_.Init(sample_rate);
+  void Init(float q) {
+    q_ = q;
+    Reset();
+  }
+
+  void Reset() {
+    low_filter_.Init();
+    high_filter_.Init();
+    SetFrequency(0.5f);
   }
 
   void SetFrequency(float knob_value) {
-    constexpr float cutoff_div_3 = 48000. / 3.;
     constexpr float kWiggle = 0.15;
     float frequency;
     if (fabs(knob_value - 0.5) < kWiggle) {
-      left_filter_.SetFreq(cutoff_div_3);
-      right_filter_.SetFreq(cutoff_div_3);
+      low_filter_.set_f_q<stmlib::FREQUENCY_FAST>(1.0f, q_);
+      high_filter_.set_f_q<stmlib::FREQUENCY_FAST>(1.0f, q_);
       high_low_pass_ = false;
       return;
     }
     high_low_pass_ = knob_value > 0.5;
     if (high_low_pass_) {
       // Highpass
-      frequency = knob_value - kWiggle - 0.5f;
+      frequency = (knob_value - kWiggle - 0.5f);
     } else {
       frequency = knob_value;
     }
-    const float cutoff_final = frequency * cutoff_div_3;
-    left_filter_.SetFreq(cutoff_final);
-    right_filter_.SetFreq(cutoff_final);
+    frequency = std::min(0.99f, std::max(0.01f, frequency));
+    low_filter_.set_f_q<stmlib::FREQUENCY_FAST>(frequency, q_);
+    high_filter_.set_f_q<stmlib::FREQUENCY_FAST>(frequency, q_);
   }
 
-  void ApplyFilterStereo(float& left, float& right) {
-    left_filter_.Process(left);
-    right_filter_.Process(right);
+  void ApplyFilter(float& sig) {
+    float low = low_filter_.Process<stmlib::FILTER_MODE_LOW_PASS>(sig);
+    float high = high_filter_.Process<stmlib::FILTER_MODE_HIGH_PASS>(sig);
 
-    if (high_low_pass_) {
-      left = left_filter_.High();
-      right = right_filter_.High();
+    if (!high_low_pass_) {
+      sig = low;
     } else {
-      left = left_filter_.Low();
-      right = right_filter_.Low();
+      sig = high;
+    }
+    if ((sig != sig)) {
+      sig = 0.0f;
     }
   }
 
  private:
   bool high_low_pass_ = false;
-  daisysp::Svf left_filter_;
-  daisysp::Svf right_filter_;
+
+  stmlib::Svf low_filter_;
+  stmlib::Svf high_filter_;
+  float q_ = 0.9f;
 };
 
 #endif  // LOW_HIGH_PASS_

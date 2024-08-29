@@ -48,7 +48,12 @@ Switch button, toggle;
 Delay delay;
 Limiter limiter_left;
 Limiter limiter_right;
-LowHighPass low_high_pass;
+
+Limiter input_limiter_left;
+Limiter input_limiter_right;
+
+LowHighPass low_high_pass_left;
+LowHighPass low_high_pass_right;
 
 // ReverbSc verb;
 
@@ -129,7 +134,8 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
     sample_triggered = sample_val * num_samples;
   }
 
-  low_high_pass.SetFrequency(filter_val);
+  low_high_pass_left.SetFrequency(filter_val);
+  low_high_pass_right.SetFrequency(filter_val);
   delay.SetFrequency(filter_val);
 
   delay.SetFeedback(delay_feedback);
@@ -151,9 +157,10 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
   lfo_osc.SetFreq(lfo_freq);
 
   for (size_t i = 0; i < size; i++) {
+    // float in_left = 0.9 * ((rand() % 2 == 0) ? 0.99f : -0.99f);   // IN_L[i];
+    // float in_right = 0.9 * ((rand() % 2 == 0) ? 0.99f : -0.99f);  // IN_R[i];
     float in_left = IN_L[i];
     float in_right = IN_R[i];
-    low_high_pass.ApplyFilterStereo(in_left, in_right);
 
     float adsr_vol = adsr.Process(siren_active);
     float extern_echo_adsr_value = extern_echo_adsr.Process(extern_delay_in);
@@ -176,10 +183,13 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
     float sig = osc.Process() + sample;
     sig *= amp;
     float delay_input = sig + echo_in_mono;
-    float delay_sig = delay.Process(delay_input) * delay_mix;
+    float delay_sig = (delay.Process(delay_input) + delay_input) * delay_mix;
 
     float out_left = sig + delay_sig;
     float out_right = sig + delay_sig;
+
+    low_high_pass_left.ApplyFilter(in_left);
+    low_high_pass_right.ApplyFilter(in_right);
 
     float outl = out_left + in_left * extern_volume;
     float outr = out_right + in_right * extern_volume;
@@ -222,7 +232,10 @@ int main(void) {
   delay.Init(hw.AudioSampleRate());
   limiter_left.Init();
   limiter_right.Init();
-  low_high_pass.Init(hw.AudioSampleRate());
+  input_limiter_left.Init();
+  input_limiter_right.Init();
+  low_high_pass_left.Init(1.4f);
+  low_high_pass_right.Init(1.4f);
 
   hw.PrintLine("System sample rate: %f", hw.AudioSampleRate());
 
