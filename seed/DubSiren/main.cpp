@@ -92,9 +92,9 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
   float decay_knob = fadc.GetValue(kDecay);
 
   float lfo_waveform = fmap(fadc.GetValue(kLfoWave), 0., 0.99);
-  float extern_volume = LinToLog(fadc.GetValue(kExternVolume));
-  if (extern_volume < 0.01f) {
-    extern_volume = 0.0f;
+  float sample_volume = LinToLog(fadc.GetValue(kExternVolume));
+  if (sample_volume < 0.01f) {
+    sample_volume = 0.0f;
   }
   float delay_mix = LinToLog(fadc.GetValue(kDelayMixKnob));
   float delay_length = LinToLog(fadc.GetValue(kDelayLengthKnob));
@@ -179,11 +179,10 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
     float freq_lfo = std::min(std::max(freq_hz * lfo, 15.0f), 9000.f);
     osc.SetFreq(freq_lfo);
 
-    const float sample = sample_manager.GetSample();
-    float sig = osc.Process() + sample;
-    sig *= amp;
+    const float sample = sample_manager.GetSample() * sample_volume;
+    float sig = osc.Process() * amp + sample * sample_volume;
     float delay_input = sig + echo_in_mono;
-    float delay_sig = (delay.Process(delay_input) + delay_input) * delay_mix;
+    float delay_sig = (delay.Process(delay_input)) * delay_mix;
 
     float out_left = sig + delay_sig;
     float out_right = sig + delay_sig;
@@ -191,11 +190,8 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
     low_high_pass_left.ApplyFilter(in_left);
     low_high_pass_right.ApplyFilter(in_right);
 
-    float outl = out_left + in_left * extern_volume;
-    float outr = out_right + in_right * extern_volume;
-
-    OUT_L[i] = outl;
-    OUT_R[i] = outr;
+    OUT_L[i] = out_left;
+    OUT_R[i] = out_right;
   }
 
   limiter_left.ProcessBlock(OUT_L, size, /*pre_gain=*/1.0f);
