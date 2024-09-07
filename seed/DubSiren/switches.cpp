@@ -1,15 +1,16 @@
+#include "switches.h"
+
 #include <array>
 
 #include "daisy_seed.h"
 #include "daisysp.h"
-#include "switches.h"
 
 using namespace daisy;
 using namespace daisysp;
 
 constexpr std::array<Pin, kNumSwitches> kSwitchPins = {
-    seed::D26, seed::D27, seed::D7,  seed::D8,  seed::D9, seed::D10,
-    seed::D11, seed::D12, seed::D13, seed::D14, seed::D0};
+    seed::D26, seed::D27, seed::D7,  seed::D8,  seed::D9,  seed::D10,
+    seed::D11, seed::D12, seed::D13, seed::D14, seed::D15, seed::A10};
 
 void Switches::Init(daisy::DaisySeed* seed, float audio_callback_rate) {
   seed_ = seed;

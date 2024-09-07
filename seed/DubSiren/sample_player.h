@@ -64,7 +64,10 @@ class SamplePlayer {
     if (should_trigger_fill_next_buffer) {
       fill_next_buffer_ = true;
     }
-    return samp;
+    // float ramp_up =
+    //     std::min(1.0f, static_cast<float>(playback_idx_) / (2400.f));
+    // ++playback_idx_;
+    return samp;  //* ramp_up;
   }
 
   int Prepare();
@@ -83,10 +86,10 @@ class SamplePlayer {
   bool is_playing_ = false;
   int play_pos_idx_ = 0;
   bool fill_next_buffer_ = false;
+  long playback_idx_ = 0;
 
   bool init_ = false;
   int read_pos_samples_ = 0;
-
   int buffer_underruns_ = 0;
 };
 

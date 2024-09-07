@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "adc.h"
+#include "blep_osc.h"
 #include "daisy_seed.h"
 #include "daisysp.h"
 #include "delay.h"
@@ -17,27 +18,30 @@
 using namespace daisy;
 using namespace daisysp;
 
-constexpr int kSirenPitchKnob = 9;
-constexpr int kLfoWave = 8;
-constexpr int kLfoDepthKnob = 7;
-constexpr int kLfoSpeedKnob = 6;
+constexpr int kSampleSelect = 1;
 
-constexpr int kDecay = 5;
-constexpr int kSampleSelect = 4;
+constexpr int kSirenPitchKnob = 2;
+constexpr int kLfoWave = 3;
+// constexpr int kLfoDepthKnob = 7;
+constexpr int kLfoSpeedKnob = 4;
 
-constexpr int kDelayLengthKnob = 3;
-constexpr int kDelayFeedbackKnob = 2;
-constexpr int kDelayMixKnob = 1;
-constexpr int kFilterKnob = 0;
+// constexpr int kDecay = 5;
+// constexpr int kSampleSelect = 4;
 
-// constexpr int kReverbFeedback = 11;
-constexpr int kVolumeKnob = 10;
+constexpr int kDelayLengthKnob = 6;
+constexpr int kDelayFeedbackKnob = 7;
+constexpr int kDelayMixKnob = 9;
+constexpr int kFilterKnob = 8;
+
+constexpr int kVolumeKnob = 5;
 constexpr int kExternVolume = 11;
 
 // DaisyPatchSM hw;
 DaisySeed hw;
 TimerHandle timer;
 Switches switches;
+
+// OnePole freq_filter;
 
 Oscillator osc;
 Adsr adsr;
@@ -49,11 +53,15 @@ Delay delay;
 Limiter limiter_left;
 Limiter limiter_right;
 
+stmlib::Svf siren_high_filter_;
+
 Limiter input_limiter_left;
 Limiter input_limiter_right;
 
 LowHighPass low_high_pass_left;
 LowHighPass low_high_pass_right;
+
+PolyBLEPOscillator blep_osc;
 
 // ReverbSc verb;
 
@@ -79,6 +87,21 @@ float LinToLog(float input) {
   return a * powf(b, input) - a;
 }
 
+int GetSampleBank(int int_val) {
+  static constexpr std::array<int, 6> kPos = {0,     2884,  18486,
+                                              33974, 49760, 64680};
+  int index = 0;
+  int smallest_diff = std::numeric_limits<int>::max();
+  for (int i = 0; i < kPos.size(); ++i) {
+    const int pos_diff = abs(kPos[i] - int_val);
+    if (pos_diff < smallest_diff) {
+      smallest_diff = pos_diff;
+      index = i;
+    }
+  }
+  return index;
+}
+
 void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
                    size_t size) {
   switches.Update();
@@ -88,8 +111,8 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
   float amp = LinToLog(fadc.GetValue(kVolumeKnob));
   float freq_knob = fadc.GetValue(kSirenPitchKnob);
   float lfo_knob = fadc.GetValue(kLfoSpeedKnob);
-  float lfo_depth_knob = fadc.GetValue(kLfoDepthKnob);
-  float decay_knob = fadc.GetValue(kDecay);
+  float lfo_depth_knob = 0.9;  // fadc.GetValue(kLfoDepthKnob);
+  float decay_knob = 0.2;      // fadc.GetValue(kDecay);
 
   float lfo_waveform = fmap(fadc.GetValue(kLfoWave), 0., 0.99);
   float sample_volume = LinToLog(fadc.GetValue(kExternVolume));
@@ -98,11 +121,11 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
   }
   float delay_mix = LinToLog(fadc.GetValue(kDelayMixKnob));
   float delay_length = LinToLog(fadc.GetValue(kDelayLengthKnob));
-  float delay_feedback = fmap(fadc.GetValue(kDelayFeedbackKnob), 0.1, 0.95);
+  float delay_feedback = fmap(fadc.GetValue(kDelayFeedbackKnob), 0.1, 0.92);
   float filter_val = fmap(fadc.GetValue(kFilterKnob), 0.001, 0.999);
 
   static bool siren_active = false;
-  if (switches.Pressed(2)) {
+  if (switches.Pressed(9)) {
     if (!siren_active) {
       adsr.Retrigger(/*hard=*/false);
       lfo_osc.Reset();
@@ -114,7 +137,7 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
   }
 
   static bool extern_delay_in = false;
-  if (switches.Pressed(0)) {
+  if (switches.Pressed(11)) {
     if (!extern_delay_in) {
       extern_echo_adsr.Retrigger(/*hard=*/false);
     }
@@ -123,15 +146,25 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
     extern_delay_in = false;
   }
 
-  if (switches.Pressed(3)) {
-    const float pitch_knob_delta = (1.0f - g_pitch_add) * g_pitch_up_factor;
-    g_pitch_add += pitch_knob_delta;
+  // if (switches.Pressed(3)) {
+  //   const float pitch_knob_delta = (1.0f - g_pitch_add) * g_pitch_up_factor;
+  //   g_pitch_add += pitch_knob_delta;
+  // }
+
+  int sample_bank = GetSampleBank(fadc.GetInt(kSampleSelect));
+  int sample_select = -1;
+  if (switches.Clicked(5)) {
+    sample_select = 0;
+  } else if (switches.Clicked(6)) {
+    sample_select = 1;
+  } else if (switches.Clicked(7)) {
+    sample_select = 2;
+  } else if (switches.Clicked(8)) {
+    sample_select = 3;
   }
 
-  if (switches.Clicked(1)) {
-    float sample_val = fmap(fadc.GetValue(kSampleSelect), 0.0, 0.99);
-    int num_samples = sample_manager.GetNumSamples();
-    sample_triggered = sample_val * num_samples;
+  if (sample_select >= 0) {
+    sample_triggered = sample_bank * 4 + sample_select;
   }
 
   low_high_pass_left.SetFrequency(filter_val);
@@ -152,6 +185,9 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
       Oscillator::WAVE_RAMP, Oscillator::WAVE_POLYBLEP_SAW,
       Oscillator::WAVE_POLYBLEP_SQUARE};
   int lfo_wave_idx = static_cast<int>(lfo_waveform * 3.0f);
+  if (lfo_wave_idx == 2) {
+    lfo_amp = 0.2f;
+  }
 
   lfo_osc.SetWaveform(kLfoWaveforms[lfo_wave_idx]);
   lfo_osc.SetFreq(lfo_freq);
@@ -165,22 +201,27 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
     float adsr_vol = adsr.Process(siren_active);
     float extern_echo_adsr_value = extern_echo_adsr.Process(extern_delay_in);
     float echo_in_mono = (in_left + in_right) / 2.0f * extern_echo_adsr_value;
-    osc.SetAmp(adsr_vol * 0.5f);
+    osc.SetAmp(adsr_vol);
 
     float lfo = 1.0 + lfo_osc.Process();
-    float freq_knob_mod;
-    if (freq_knob < 0.5) {
-      freq_knob_mod = freq_knob + (1.0f - freq_knob) * g_pitch_add;
-    } else {
-      freq_knob_mod = freq_knob - freq_knob * g_pitch_add;
-    }
+    // float freq_knob_mod;
+    // if (freq_knob < 0.5) {
+    //   freq_knob_mod = freq_knob + (1.0f - freq_knob) * g_pitch_add;
+    // } else {
+    //   freq_knob_mod = freq_knob - freq_knob * g_pitch_add;
+    // }
 
-    float freq_hz = fmap(LinToLog(freq_knob_mod), 30.f, 4000.f);
+    float freq_hz = fmap(LinToLog(freq_knob), 30.f, 4000.f);
     float freq_lfo = std::min(std::max(freq_hz * lfo, 15.0f), 9000.f);
     osc.SetFreq(freq_lfo);
 
     const float sample = sample_manager.GetSample() * sample_volume;
-    float sig = osc.Process() * amp + sample * sample_volume;
+    // float osc_out =
+    //     siren_high_filter_.Process<stmlib::FILTER_MODE_LOW_PASS>(osc.Process());
+    float osc_out = osc.Process();
+    float sig = osc_out * adsr_vol * amp + sample;
+    ;
+
     float delay_input = sig + echo_in_mono;
     float delay_sig = (delay.Process(delay_input)) * delay_mix;
 
@@ -202,14 +243,15 @@ void OutputStats() {
   for (int i = 0; i < 12; ++i) {
     hw.PrintLine("Knob: %d, %d", i, fadc.GetInt(i));
   }
-  for (int i = 0; i < 11; ++i) {
+  for (int i = 0; i < 12; ++i) {
     hw.PrintLine("Switch: %i %s", i, switches.Pressed(i) ? "yes" : "no");
   }
+  hw.PrintLine("SB: %i", GetSampleBank(fadc.GetInt(kSampleSelect)));
 }
 
 int main(void) {
   hw.Init();
-  hw.SetAudioBlockSize(1);
+  hw.SetAudioBlockSize(16);
 
   TimerHandle::Config config;
   config.dir = TimerHandle::Config::CounterDir::UP;
@@ -233,9 +275,14 @@ int main(void) {
   low_high_pass_left.Init(1.4f);
   low_high_pass_right.Init(1.4f);
 
-  hw.PrintLine("System sample rate: %f", hw.AudioSampleRate());
+  siren_high_filter_.Init();
+  siren_high_filter_.set_f_q<stmlib::FREQUENCY_ACCURATE>(0.1, 1.0);
+
+  hw.PrintLine("System sample rate: %d", (int)hw.AudioSampleRate());
 
   g_pitch_up_factor = 1.0f / (hw.AudioSampleRate() * 3);
+
+  // b
 
   osc.Init(hw.AudioSampleRate());
   osc.SetWaveform(Oscillator::WAVE_POLYBLEP_SQUARE);

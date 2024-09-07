@@ -10,7 +10,7 @@
 #include "sample_player.h"
 #include "wav_file.h"
 
-constexpr int kMaxSimultaneousSample = 3;
+constexpr int kMaxSimultaneousSample = 4;
 
 class SampleManager {
  public:
@@ -28,11 +28,14 @@ class SampleManager {
   int SdCardLoading();
 
  private:
+  int GetIndex(const std::string& filename);
+
   using SamplePlayerList = std::list<std::shared_ptr<SamplePlayer>>;
 
   std::vector<std::string> files_;
   std::shared_ptr<SamplePlayerList> sample_player_;
   std::vector<WavFile> wav_files_;
+  std::vector<WavFile*> play_list_;
 };
 
 #endif  // SDCARD_H

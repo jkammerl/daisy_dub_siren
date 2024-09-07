@@ -2,10 +2,12 @@
 #ifndef BUTTONS_H
 #define BUTTONS_H
 
+#include <array>
+
 #include "daisy_seed.h"
 #include "daisysp.h"
 
-constexpr const int kNumSwitches = 11;
+constexpr const int kNumSwitches = 12;
 
 class Switches {
  public:
