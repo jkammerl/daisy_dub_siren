@@ -138,7 +138,7 @@ int WavFile::LoadInitBuffer() {
   init_buffer_.is_final_buffer_reached = num_request_bytes < kBufferSize ||
                                          bytesread < num_request_bytes ||
                                          file_->IsEof();
-  init_buffer_.size = bytesread;
+  init_buffer_.size = bytesread / sizeof(int16_t);
   return 0;
 }
 

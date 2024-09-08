@@ -28,7 +28,7 @@ float SampleManager::GetSample() {
   auto sample_player_new = sample_player_;
   float sample_player_sum = 0.0f;
   for (auto sample_player : *sample_player_new) {
-    sample_player_sum += s162f(sample_player->GetSample());
+    sample_player_sum += sample_player->GetSample() / 32768.0f;
   }
   return sample_player_sum;
 }

@@ -10,7 +10,6 @@
 #include "daisy_seed.h"
 #include "daisysp.h"
 #include "delay.h"
-#include "low_high_pass.h"
 #include "sample_manager.h"
 #include "switches.h"
 
@@ -51,9 +50,6 @@ Limiter limiter_right;
 
 Limiter input_limiter_left;
 Limiter input_limiter_right;
-
-LowHighPass low_high_pass_left;
-LowHighPass low_high_pass_right;
 
 // ReverbSc verb;
 
@@ -134,8 +130,6 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
     sample_triggered = sample_val * num_samples;
   }
 
-  low_high_pass_left.SetFrequency(filter_val);
-  low_high_pass_right.SetFrequency(filter_val);
   delay.SetFrequency(filter_val);
 
   delay.SetFeedback(delay_feedback);
@@ -187,9 +181,6 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
     float out_left = sig + delay_sig;
     float out_right = sig + delay_sig;
 
-    low_high_pass_left.ApplyFilter(in_left);
-    low_high_pass_right.ApplyFilter(in_right);
-
     OUT_L[i] = out_left;
     OUT_R[i] = out_right;
   }
@@ -209,7 +200,7 @@ void OutputStats() {
 
 int main(void) {
   hw.Init();
-  hw.SetAudioBlockSize(1);
+  hw.SetAudioBlockSize(16);
 
   TimerHandle::Config config;
   config.dir = TimerHandle::Config::CounterDir::UP;
@@ -230,8 +221,6 @@ int main(void) {
   limiter_right.Init();
   input_limiter_left.Init();
   input_limiter_right.Init();
-  low_high_pass_left.Init(1.4f);
-  low_high_pass_right.Init(1.4f);
 
   hw.PrintLine("System sample rate: %f", hw.AudioSampleRate());
 

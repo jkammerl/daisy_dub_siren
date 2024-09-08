@@ -10,7 +10,7 @@
 #include "sample_player.h"
 #include "wav_file.h"
 
-constexpr int kMaxSimultaneousSample = 3;
+constexpr int kMaxSimultaneousSample = 4;
 
 class SampleManager {
  public:

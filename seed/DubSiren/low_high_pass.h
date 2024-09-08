@@ -29,7 +29,7 @@ class LowHighPass {
     high_low_pass_ = knob_value > 0.5;
     if (high_low_pass_) {
       // Highpass
-      frequency = (knob_value - kWiggle - 0.5f);
+      frequency = (knob_value * 0.8f - kWiggle - 0.5f);
     } else {
       frequency = knob_value;
     }
