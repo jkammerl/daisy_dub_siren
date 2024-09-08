@@ -7,7 +7,7 @@ using namespace daisy;
 using namespace daisysp;
 
 // Filter intensity:
-constexpr const float kKnobAlpha = 0.001f;
+constexpr const float kKnobAlpha = 0.01f;
 constexpr const float kInvKnobAlpha = 1.0f - kKnobAlpha;
 
 void FilteredAdc::Init(daisy::DaisySeed* seed) {

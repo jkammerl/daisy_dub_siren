@@ -82,8 +82,8 @@ float LinToLog(float input) {
 }
 
 int GetSampleBank(int int_val) {
-  static constexpr std::array<int, 6> kPos = {0,     2884,  18486,
-                                              33974, 49760, 64680};
+  static constexpr std::array<int, 6> kPos = {0,     12994,  26071,
+                                              39056, 52359, 64680};
   int index = 0;
   int smallest_diff = std::numeric_limits<int>::max();
   for (int i = 0; i < kPos.size(); ++i) {
