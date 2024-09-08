@@ -7,7 +7,6 @@
 #include <vector>
 
 #include "adc.h"
-#include "blep_osc.h"
 #include "daisy_seed.h"
 #include "daisysp.h"
 #include "delay.h"
@@ -57,11 +56,6 @@ stmlib::Svf siren_high_filter_;
 
 Limiter input_limiter_left;
 Limiter input_limiter_right;
-
-LowHighPass low_high_pass_left;
-LowHighPass low_high_pass_right;
-
-PolyBLEPOscillator blep_osc;
 
 // ReverbSc verb;
 
@@ -167,8 +161,6 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
     sample_triggered = sample_bank * 4 + sample_select;
   }
 
-  low_high_pass_left.SetFrequency(filter_val);
-  low_high_pass_right.SetFrequency(filter_val);
   delay.SetFrequency(filter_val);
 
   delay.SetFeedback(delay_feedback);
@@ -228,9 +220,6 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
     float out_left = sig + delay_sig;
     float out_right = sig + delay_sig;
 
-    low_high_pass_left.ApplyFilter(in_left);
-    low_high_pass_right.ApplyFilter(in_right);
-
     OUT_L[i] = out_left;
     OUT_R[i] = out_right;
   }
@@ -272,8 +261,6 @@ int main(void) {
   limiter_right.Init();
   input_limiter_left.Init();
   input_limiter_right.Init();
-  low_high_pass_left.Init(1.4f);
-  low_high_pass_right.Init(1.4f);
 
   siren_high_filter_.Init();
   siren_high_filter_.set_f_q<stmlib::FREQUENCY_ACCURATE>(0.1, 1.0);

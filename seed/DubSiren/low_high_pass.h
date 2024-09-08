@@ -29,10 +29,11 @@ class LowHighPass {
     high_low_pass_ = knob_value > 0.5;
     if (high_low_pass_) {
       // Highpass
-      frequency = (knob_value - kWiggle - 0.5f);
+      frequency = (knob_value * 0.8 - kWiggle - 0.5f);
     } else {
       frequency = knob_value;
     }
+    // frequency = fmap(frequency * 2, 0.1, 0.3);
     frequency = std::min(0.99f, std::max(0.01f, frequency));
     low_filter_.set_f_q<stmlib::FREQUENCY_FAST>(frequency, q_);
     high_filter_.set_f_q<stmlib::FREQUENCY_FAST>(frequency, q_);
