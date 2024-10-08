@@ -8,6 +8,7 @@ int SampleManager::Init(daisy::DaisySeed* seed) {
   InitSdCard();
   ReadDir(files_, {".wav", ".WAV", ".Wav"}, true);
   std::sort(files_.begin(), files_.end());
+  seed->PrintLine("Num samples found %d", files_.size());
 
   sample_player_ = std::shared_ptr<SamplePlayerList>(new SamplePlayerList);
 
@@ -20,13 +21,12 @@ int SampleManager::Init(daisy::DaisySeed* seed) {
     }
     WavFile new_streamer;
     int err = new_streamer.Init(files_[i]);
-    if (new_streamer.IsInitialized()) {
+    if (err == 0 && new_streamer.IsInitialized()) {
       wav_files_.push_back(std::move(new_streamer));
       play_list_[index] = &wav_files_.back();
       seed->PrintLine(files_[i].c_str());
-    }
-    if (err != 0) {
-      return err;
+    } else {
+      seed->PrintLine("Streamer not initialized %d", files_.size());
     }
   }
 
