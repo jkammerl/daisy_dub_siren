@@ -14,8 +14,9 @@ int WavFile::SkipToChunk(size_t* file_pos_bytes, const char* chunk_name,
     if (file_->Read((void*)chunk_size, sizeof(int32_t), &bytesread) == FR_OK &&
         bytesread == sizeof(int32_t) && (memcmp(buffer, chunk_name, 4) == 0)) {
       *file_pos_bytes += sizeof(int32_t);
-      return -1;
+      return 0;
     }
+    *file_pos_bytes += *chunk_size + sizeof(int32_t);
     if (++chunk_count == 10) {
       return -1;
     };
@@ -58,7 +59,7 @@ int WavFile::ParseWavHeader(const char* filename) {
 
   // Look for fmt chunk.
   int32_t chunk_size = 0;
-  if (!SkipToChunk(&file_pos_bytes, "fmt ", &chunk_size)) {
+  if (SkipToChunk(&file_pos_bytes, "fmt ", &chunk_size)) {
     return -1;
   }
 
@@ -75,13 +76,18 @@ int WavFile::ParseWavHeader(const char* filename) {
   }
 
   // Look for data chunk.
-  if (!SkipToChunk(&file_pos_bytes, "data", &chunk_size)) {
+  if (SkipToChunk(&file_pos_bytes, "data", &chunk_size)) {
     return -1;
   }
 
   // Obtain number of samples.
   sample_info_.num_samples = sample_info_.wav_header.SubCHunk2Size /
                              (sample_info_.wav_header.BitPerSample / 8);
+  if (sample_info_.num_samples == 0 && file_pos_bytes <= chunk_size + 8) {
+    // Compute num samples from chunk size
+    sample_info_.num_samples =
+        chunk_size / (sample_info_.wav_header.BitPerSample / 8);
+  }
   sample_info_.samples_first_byte = file_pos_bytes;
   return 0;
 }
@@ -100,12 +106,12 @@ int WavFile::Init(const std::string& filename) {
     return -1;
   }
 
-  const int bytes_per_sample = sample_info_.wav_header.BitPerSample / 8;
-  if (sample_info_.samples_first_byte +
-          sample_info_.num_samples * bytes_per_sample !=
-      file_size) {
-    return -1;
-  }
+  // const int bytes_per_sample = sample_info_.wav_header.BitPerSample / 8;
+  // if (sample_info_.samples_first_byte +
+  //         sample_info_.num_samples * bytes_per_sample !=
+  //     file_size) {
+  //   return -1;
+  // }
   if (sample_info_.wav_header.SampleRate != 48000 ||
       sample_info_.wav_header.BitPerSample != 16 ||
       sample_info_.wav_header.NbrChannels != 1) {
