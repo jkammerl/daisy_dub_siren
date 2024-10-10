@@ -82,7 +82,7 @@ float LinToLog(float input) {
 }
 
 int GetSampleBank(int int_val) {
-  static constexpr std::array<int, 6> kPos = {0,     12994,  26071,
+  static constexpr std::array<int, 6> kPos = {0,     12994, 26071,
                                               39056, 52359, 64680};
   int index = 0;
   int smallest_diff = std::numeric_limits<int>::max();
@@ -247,7 +247,7 @@ int main(void) {
   config.periph = TimerHandle::Config::Peripheral::TIM_2;
   timer.Init(config);
   timer.Start();
-  hw.StartLog(true);
+  hw.StartLog(false);
   hw.PrintLine("Daisy Patch SM started.");
 
   sample_manager.Init(&hw);
