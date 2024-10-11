@@ -207,7 +207,7 @@ int main(void) {
   config.periph = TimerHandle::Config::Peripheral::TIM_2;
   timer.Init(config);
   timer.Start();
-  hw.StartLog(true);
+  hw.StartLog(false);
   hw.PrintLine("Daisy Patch SM started.");
 
   sample_manager.Init(&hw);
