@@ -18,6 +18,7 @@ C_INCLUDES += \
 -I../..
 
 #LDFLAGS = -u _printf_float
+APP_TYPE = BOOT_SRAM
 
 # Library Locations
 LIBDAISY_DIR ?= ../../libDaisy/

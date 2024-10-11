@@ -3,6 +3,7 @@
 #include "sdcard.h"
 
 int SampleManager::Init(daisy::DaisySeed* seed) {
+  feature_generator_.Init();
   InitSdCard();
   ReadDir(files_, {".wav", ".WAV", ".Wav"}, true);
   std::sort(files_.begin(), files_.end());
@@ -15,6 +16,11 @@ int SampleManager::Init(daisy::DaisySeed* seed) {
     WavFile new_streamer;
     int err = new_streamer.Init(files_[i]);
     if (err == 0 && new_streamer.IsInitialized()) {
+      float x, y;
+      ComputeCloudCoordinate(new_streamer.GetSamplePlayer(i), &x, &y);
+      seed->PrintLine("Sample: %s, coordinates: %d, %d", files_[i],
+                      (int)(x * 100), (int)(y * 100));
+
       wav_files_.push_back(std::move(new_streamer));
       seed->PrintLine(files_[i].c_str());
     } else {
@@ -22,6 +28,15 @@ int SampleManager::Init(daisy::DaisySeed* seed) {
     }
   }
   return 0;
+}
+
+void SampleManager::ComputeCloudCoordinate(
+    std::shared_ptr<SamplePlayer> sample_player, float* x, float* y) {
+  sample_player->Play();
+  while (sample_player->IsPlaying() && sample_player->Prepare() == 0) {
+    feature_generator_.AddSample(sample_player->GetSample() / 32768.0f);
+  }
+  feature_generator_.GetCloudCoordinates(x, y);
 }
 
 float SampleManager::GetSample() {

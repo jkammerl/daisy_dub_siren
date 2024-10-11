@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "feature_generator.h"
 #include "sample_player.h"
 #include "wav_file.h"
 
@@ -28,11 +29,16 @@ class SampleManager {
   int SdCardLoading();
 
  private:
+  void ComputeCloudCoordinate(std::shared_ptr<SamplePlayer> sample_player,
+                              float* x, float* y);
+
   using SamplePlayerList = std::list<std::shared_ptr<SamplePlayer>>;
 
   std::vector<std::string> files_;
   std::shared_ptr<SamplePlayerList> sample_player_;
   std::vector<WavFile> wav_files_;
+
+  FeatureGenerator feature_generator_;
 };
 
 #endif  // SDCARD_H
