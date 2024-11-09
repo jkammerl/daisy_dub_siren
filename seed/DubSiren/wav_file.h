@@ -13,7 +13,7 @@
 
 class WavFile {
  public:
-  WavFile() : file_(std::make_unique<SdFile>()) {}
+  WavFile() = default;
   WavFile(WavFile&& other) {
     file_ = std::move(other.file_);
     sample_info_ = std::move(other.sample_info_);
@@ -21,26 +21,31 @@ class WavFile {
     init_ = other.init_;
   };
   WavFile(const WavFile&) = delete;
+  WavFile& operator=(WavFile&&) = default;
 
-  int Init(const std::string& filename);
+  ~WavFile() { Close(); }
 
-  std::shared_ptr<SamplePlayer> GetSamplePlayer(int sample_idx) {
+  int Init(SdFile* sdfile);
+
+  SdFile* GetSdFile() const { return file_; }
+
+  std::shared_ptr<SamplePlayer> GetSamplePlayer() {
     if (!init_) {
       return nullptr;
     }
     return std::shared_ptr<SamplePlayer>(
-        new SamplePlayer(sample_info_, sample_idx, file_.get(), init_buffer_));
+        new SamplePlayer(sample_info_, file_, init_buffer_));
   }
 
   bool IsInitialized() const { return init_; }
 
  private:
-  int ParseWavHeader(const char* filename);
+  int ParseWavHeader();
   int SkipToChunk(size_t* bytepos, const char* chunk_name, int32_t* chunk_size);
   int LoadInitBuffer();
   void Close();
 
-  std::unique_ptr<SdFile> file_;
+  SdFile* file_;
   SampleInfo sample_info_;
   Buffer init_buffer_;
   bool init_ = false;

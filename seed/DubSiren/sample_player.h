@@ -12,10 +12,9 @@
 
 class SamplePlayer {
  public:
-  SamplePlayer(const SampleInfo& wav_file_info, int sample_idx, SdFile* sdfile,
+  SamplePlayer(const SampleInfo& wav_file_info, SdFile* sdfile,
                Buffer& init_buffer)
       : sample_info_(wav_file_info),
-        sample_idx_(sample_idx),
         sdfile_(sdfile),
         current_buffer_(&init_buffer),
         next_buffer_(&buffer_[1]),
@@ -25,13 +24,13 @@ class SamplePlayer {
 
   SamplePlayer(const SamplePlayer&) = delete;
 
-  int GetSampleIdx() const { return sample_idx_; }
-
   void Play() { is_playing_ = true; }
 
   bool IsPlaying() const { return is_playing_; }
 
   int GetNumUnderuns() const { return buffer_underruns_; }
+
+  SdFile* GetSdFile() const { return sdfile_; }
 
   int16_t GetSample() {
     if (!is_playing_) {
@@ -71,7 +70,6 @@ class SamplePlayer {
 
  private:
   const SampleInfo& sample_info_;
-  const int sample_idx_;
   SdFile* const sdfile_;
 
   Buffer* current_buffer_;

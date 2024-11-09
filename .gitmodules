@@ -8,3 +8,6 @@
 [submodule "libDaisy"]
 	path = libDaisy
 	url = https://github.com/electro-smith/libDaisy
+[submodule "seed/DubSiren/seed/DubSiren/3p/nanoflann"]
+	path = seed/DubSiren/seed/DubSiren/3p/nanoflann
+	url = https://github.com/jlblancoc/nanoflann.git

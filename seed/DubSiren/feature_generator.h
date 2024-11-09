@@ -30,6 +30,7 @@ class FeatureGenerator {
   void GetCloudCoordinates(float* x, float* y) {
     GetFeatures(&feature_vec_);
     ComputeCoordinates(feature_vec_, x, y);
+    mfcc_vec_.clear();
   }
 
  private:

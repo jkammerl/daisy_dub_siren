@@ -7,11 +7,10 @@
 #include <string>
 #include <vector>
 
-#include "feature_generator.h"
 #include "sample_player.h"
 #include "wav_file.h"
 
-constexpr int kMaxSimultaneousSample = 4;
+constexpr int kMaxSimultaneousSample = 2;
 
 class SampleManager {
  public:
@@ -20,9 +19,7 @@ class SampleManager {
 
   int Init(daisy::DaisySeed* seed);
 
-  int GetNumSamples() const { return wav_files_.size(); }
-
-  int TriggerSample(int sample_idx, bool retrigger);
+  int TriggerSample(SdFile* file, bool retrigger);
 
   float GetSample();
 
@@ -36,9 +33,7 @@ class SampleManager {
 
   std::vector<std::string> files_;
   std::shared_ptr<SamplePlayerList> sample_player_;
-  std::vector<WavFile> wav_files_;
-
-  FeatureGenerator feature_generator_;
+  std::list<WavFile> wav_files_;
 };
 
 #endif  // SDCARD_H

@@ -4,7 +4,7 @@
 
 #include <string>
 
-static constexpr int kBufferSize = 4096 / 4;
+static constexpr int kBufferSize = 4096 / 8;
 
 struct WavHeader {
   uint16_t AudioFormat;   /**< & */

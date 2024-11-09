@@ -3,40 +3,8 @@
 #include "sdcard.h"
 
 int SampleManager::Init(daisy::DaisySeed* seed) {
-  feature_generator_.Init();
-  InitSdCard();
-  ReadDir(files_, {".wav", ".WAV", ".Wav"}, true);
-  std::sort(files_.begin(), files_.end());
-  seed->PrintLine("Num samples found %d", files_.size());
-
   sample_player_ = std::shared_ptr<SamplePlayerList>(new SamplePlayerList);
-
-  wav_files_.reserve(files_.size());
-  for (size_t i = 0; i < files_.size(); ++i) {
-    WavFile new_streamer;
-    int err = new_streamer.Init(files_[i]);
-    if (err == 0 && new_streamer.IsInitialized()) {
-      float x, y;
-      ComputeCloudCoordinate(new_streamer.GetSamplePlayer(i), &x, &y);
-      seed->PrintLine("Sample: %s, coordinates: %d, %d", files_[i],
-                      (int)(x * 100), (int)(y * 100));
-
-      wav_files_.push_back(std::move(new_streamer));
-      seed->PrintLine(files_[i].c_str());
-    } else {
-      seed->PrintLine("Streamer not initialized %d", files_.size());
-    }
-  }
   return 0;
-}
-
-void SampleManager::ComputeCloudCoordinate(
-    std::shared_ptr<SamplePlayer> sample_player, float* x, float* y) {
-  sample_player->Play();
-  while (sample_player->IsPlaying() && sample_player->Prepare() == 0) {
-    feature_generator_.AddSample(sample_player->GetSample() / 32768.0f);
-  }
-  feature_generator_.GetCloudCoordinates(x, y);
 }
 
 float SampleManager::GetSample() {
@@ -78,10 +46,7 @@ int SampleManager::SdCardLoading() {
   return 0;
 }
 
-int SampleManager::TriggerSample(int sample_idx, bool retrigger) {
-  if (sample_idx < 0 || sample_idx >= static_cast<int>(wav_files_.size())) {
-    return -1;
-  }
+int SampleManager::TriggerSample(SdFile* sd_file, bool retrigger) {
   std::shared_ptr<SamplePlayerList> sample_player_new(new SamplePlayerList);
   auto sample_player_cached = sample_player_;
   *sample_player_new = *sample_player_cached;
@@ -89,15 +54,28 @@ int SampleManager::TriggerSample(int sample_idx, bool retrigger) {
     // Remove currently playing samples.
     auto itr = sample_player_new->begin();
     while (itr != sample_player_new->end()) {
-      if ((*itr)->GetSampleIdx() == sample_idx) {
+      if ((*itr)->GetSdFile() == sd_file) {
         itr = sample_player_new->erase(itr);
       } else {
         ++itr;
       }
     }
   }
-  sample_player_new->push_back(
-      wav_files_[sample_idx].GetSamplePlayer(sample_idx));
+  WavFile* wav_file = nullptr;
+  auto itr = std::find_if(
+      wav_files_.begin(), wav_files_.end(),
+      [&sd_file](const WavFile& wf) { return wf.GetSdFile() == sd_file; });
+  if (itr == wav_files_.end()) {
+    WavFile new_wav_file;
+    if (new_wav_file.Init(sd_file) == 0 && new_wav_file.IsInitialized()) {
+      wav_files_.push_back(std::move(new_wav_file));
+      wav_file = &wav_files_.back();
+    }
+  } else {
+    wav_file = &(*itr);
+  }
+
+  sample_player_new->push_back(wav_file->GetSamplePlayer());
 
   while (sample_player_new->size() >= kMaxSimultaneousSample) {
     sample_player_new->pop_front();

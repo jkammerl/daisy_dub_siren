@@ -28,7 +28,7 @@ int WavFile::SkipToChunk(size_t* file_pos_bytes, const char* chunk_name,
   return 0;
 }
 
-int WavFile::ParseWavHeader(const char* filename) {
+int WavFile::ParseWavHeader() {
   size_t bytesread = 0;
   size_t file_pos_bytes = 0;
   char buffer[4];
@@ -92,26 +92,14 @@ int WavFile::ParseWavHeader(const char* filename) {
   return 0;
 }
 
-int WavFile::Init(const std::string& filename) {
-  int file_size = 0;
-  if (file_->GetFileSize(filename.c_str(), &file_size) != FR_OK) {
+int WavFile::Init(SdFile* sdfile) {
+  file_ = sdfile;
+  file_->ReOpen();
+
+  if (ParseWavHeader()) {
     return -1;
   }
 
-  if (file_->Open(filename.c_str()) != FR_OK) {
-    return -1;
-  }
-
-  if (ParseWavHeader(filename.c_str())) {
-    return -1;
-  }
-
-  // const int bytes_per_sample = sample_info_.wav_header.BitPerSample / 8;
-  // if (sample_info_.samples_first_byte +
-  //         sample_info_.num_samples * bytes_per_sample !=
-  //     file_size) {
-  //   return -1;
-  // }
   if (sample_info_.wav_header.SampleRate != 48000 ||
       sample_info_.wav_header.BitPerSample != 16 ||
       sample_info_.wav_header.NbrChannels != 1) {

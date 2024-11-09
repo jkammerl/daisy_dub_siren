@@ -14,7 +14,7 @@
 class MfccGenerator {
  public:
   void Init() {
-    filters_ = ComputeMelFilters<kNumMelBands>(kNyquist, kPowerSpecSize);
+    filters_ = ComputeMelFilters();
     temp_products_.resize(kPowerSpecSize);
     ps_.Init();
     mel_dct_.Init();
@@ -106,49 +106,43 @@ class MfccGenerator {
     }
   }
 
-  template <int kNumMelBands>
-  std::array<TriangleMelFilter, kNumMelBands> ComputeMelFilters(
-      float nyquist_hz, int num_freq_bins) {
+  std::array<TriangleMelFilter, kNumMelBands> ComputeMelFilters() {
     const float low_mel = Hz2Mel(0);
-    const float high_mel = Hz2Mel(nyquist_hz);
+    const float high_mel = Hz2Mel(kNyquist);
     const double mel_step = (high_mel - low_mel) / float(kNumMelBands + 1);
-    std::vector<float> mel_center_hz(kNumMelBands + 2);
+    std::array<float, kNumMelBands + 2> mel_center_hz;
     // compute points evenly spaced in mels
     for (int i = 0; i < (int)mel_center_hz.size(); i++) {
       const float mel_center = low_mel + i * mel_step;
       mel_center_hz[i] = Mel2Hz(mel_center);
     }
 
-    std::vector<float> ramp(mel_center_hz.size() * num_freq_bins);
-    const float bin_step_hz = nyquist_hz / (num_freq_bins - 1);
-    for (int c = 0; c < num_freq_bins; ++c) {
-      const float bin_center_hz = c * bin_step_hz;
-      for (int m = 0; m < static_cast<int>(mel_center_hz.size()); ++m) {
-        ramp[m * num_freq_bins + c] = mel_center_hz[m] - bin_center_hz;
-      }
-    }
+    const float bin_step_hz = kNyquist / (kPowerSpecSize - 1);
 
-    std::vector<float> weights(kNumMelBands * num_freq_bins);
+    std::array<TriangleMelFilter, kNumMelBands> triangle_filterbank;
+
     for (int m = 0; m < kNumMelBands; ++m) {
       const float lower_diff = mel_center_hz[m + 1] - mel_center_hz[m];
       const float upper_diff = mel_center_hz[m + 2] - mel_center_hz[m + 1];
 
+      std::array<float, kPowerSpecSize> weights;
+
       // Slaney-style mel is scaled to be approx constant energy per channel
       const float enorm = 2.0 / (mel_center_hz[2 + m] - mel_center_hz[m]);
-      for (int c = 0; c < num_freq_bins; ++c) {
-        const float lower = -ramp[m * num_freq_bins + c] / lower_diff;
-        const float upper = ramp[(m + 2) * num_freq_bins + c] / upper_diff;
-        weights[m * num_freq_bins + c] =
-            std::max(0.0f, std::min(lower, upper)) * enorm;
-      }
-    }
+      for (int c = 0; c < kPowerSpecSize; ++c) {
+        const float bin_center_hz = c * bin_step_hz;
+        const float ramp_m_c = mel_center_hz[m] - bin_center_hz;
+        const float ramp_m2_c = mel_center_hz[m + 2] - bin_center_hz;
 
-    std::array<TriangleMelFilter, kNumMelBands> triangle_filterbank;
-    for (int m = 0; m < static_cast<int>(triangle_filterbank.size()); ++m) {
-      int first_non_zero_coef_idx = -1;
-      int num_non_zero_coefs = 0;
-      for (int c = 0; c < num_freq_bins; ++c) {
-        const float coef = weights[m * num_freq_bins + c];
+        const float lower = -ramp_m_c / lower_diff;
+        const float upper = ramp_m2_c / upper_diff;
+        weights[c] = std::max(0.0f, std::min(lower, upper)) * enorm;
+      }
+
+      volatile int first_non_zero_coef_idx = -1;
+      volatile int num_non_zero_coefs = 0;
+      for (int c = 0; c < kPowerSpecSize; ++c) {
+        const float coef = weights[c];
         if (coef > 0) {
           if (first_non_zero_coef_idx < 0) {
             first_non_zero_coef_idx = c;
@@ -158,8 +152,7 @@ class MfccGenerator {
       }
       auto& filterbank = triangle_filterbank[m];
       filterbank.start_bin = first_non_zero_coef_idx;
-      const float* first_coef =
-          &weights[m * num_freq_bins + first_non_zero_coef_idx];
+      const float* first_coef = &weights[first_non_zero_coef_idx];
       filterbank.coefs =
           std::vector<float>(first_coef, first_coef + num_non_zero_coefs);
     }
