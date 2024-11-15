@@ -4,6 +4,8 @@
 
 #include <memory>
 
+#include "common.h"
+
 class SdFile;
 class SampleSearchImpl;
 
@@ -12,11 +14,9 @@ class SampleSearch {
   SampleSearch();
   ~SampleSearch();
 
-  void AddSample(float x, float y, SdFile* wav_file);
+  void Init();
 
-  void ComputeKdTree();
-
-  SdFile* Lookup(float x, float y);
+  const SampleInfo& Lookup(float x, float y);
 
  private:
   std::unique_ptr<SampleSearchImpl> sample_search_impl_;

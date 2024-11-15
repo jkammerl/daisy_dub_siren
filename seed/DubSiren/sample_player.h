@@ -12,17 +12,12 @@
 
 class SamplePlayer {
  public:
-  SamplePlayer(const SampleInfo& wav_file_info, SdFile* sdfile,
-               Buffer& init_buffer)
-      : sample_info_(wav_file_info),
-        sdfile_(sdfile),
-        current_buffer_(&init_buffer),
-        next_buffer_(&buffer_[1]),
-        is_playing_(true) {
-    read_pos_samples_ = init_buffer.size;
+  SamplePlayer(const SampleInfo* sample_info) : sample_info_(sample_info) {
+    current_buffer_ = &sample_info->first_buffer;
+    next_buffer_ = &buffer_[1];
+    is_playing_ = true;
+    read_pos_samples_ = sample_info->first_buffer.num_samples;
   }
-
-  SamplePlayer(const SamplePlayer&) = delete;
 
   void Play() { is_playing_ = true; }
 
@@ -30,25 +25,23 @@ class SamplePlayer {
 
   int GetNumUnderuns() const { return buffer_underruns_; }
 
-  SdFile* GetSdFile() const { return sdfile_; }
-
   int16_t GetSample() {
     if (!is_playing_) {
       return 0;
     }
-    if (current_buffer_->size == 0) {
+    if (current_buffer_->num_samples == 0) {
       is_playing_ = false;
       return 0;
     }
 
     // When starting playback of a new buffer, signal the filling of a new one.
     bool should_trigger_fill_next_buffer = play_pos_idx_ == 0;
-    const int16_t samp = current_buffer_->data[play_pos_idx_];
+    const int16_t samp = current_buffer_->samples[play_pos_idx_];
 
     ++play_pos_idx_;
-    if ((play_pos_idx_ >= current_buffer_->size)) {
+    if ((play_pos_idx_ >= current_buffer_->num_samples)) {
       // Has the last buffer been reached?
-      is_playing_ = !current_buffer_->is_final_buffer_reached;
+      is_playing_ = !current_buffer_->eob_reached;
       if (!is_playing_) {
         // In case final buffer has been reached, fill beginning.
         should_trigger_fill_next_buffer = true;
@@ -68,15 +61,19 @@ class SamplePlayer {
 
   int Prepare();
 
- private:
-  const SampleInfo& sample_info_;
-  SdFile* const sdfile_;
+  const SampleInfo& GetSampleInfo() { return *sample_info_; }
 
-  Buffer* current_buffer_;
-  Buffer* next_buffer_;
+  SamplePlayer(const SamplePlayer&) = delete;
+  SamplePlayer& operator=(const SamplePlayer&) = delete;
+
+ private:
+  const SampleInfo* sample_info_;
+
+  const AudioBuffer* current_buffer_;
+  AudioBuffer* next_buffer_;
 
   // Double buffering scheme.
-  Buffer buffer_[2];
+  AudioBuffer buffer_[2];
 
   bool is_playing_ = false;
   int play_pos_idx_ = 0;

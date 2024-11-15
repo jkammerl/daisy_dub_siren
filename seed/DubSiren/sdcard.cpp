@@ -127,7 +127,7 @@ bool ReadDir(FileCallback file_callback,
   return cont;
 }
 
-int WriteMapFile(const char* filename, const CoordinateToHash* coordinate_map,
+int WriteMapFile(const char* filename, const SampleInfo& coordinate_map,
                  int size) {
   int fil_idx = FilManager::Get()->RegisterFil();
   FIL* fil = FilManager::Get()->GetFil(fil_idx);
@@ -145,9 +145,9 @@ int WriteMapFile(const char* filename, const CoordinateToHash* coordinate_map,
     FilManager::Get()->ReturnFil(fil_idx);
     return res;
   }
-  res = f_write(fil, reinterpret_cast<const char*>(coordinate_map),
-                sizeof(CoordinateToHash) * size, &bytes_written);
-  if (res != FR_OK || bytes_written != sizeof(CoordinateToHash) * size) {
+  res = f_write(fil, reinterpret_cast<const char*>(&coordinate_map),
+                sizeof(SampleInfo) * size, &bytes_written);
+  if (res != FR_OK || bytes_written != sizeof(SampleInfo) * size) {
     f_close(fil);
     FilManager::Get()->ReturnFil(fil_idx);
     return res;
@@ -161,8 +161,8 @@ int WriteMapFile(const char* filename, const CoordinateToHash* coordinate_map,
   return FR_OK;
 }
 
-int ReadMapFile(const char* filename, CoordinateToHash* coordinate_map,
-                int* size, int max_size) {
+int ReadMapFile(const char* filename, SampleInfo* coordinate_map, int* size,
+                int max_size) {
   int fil_idx = FilManager::Get()->RegisterFil();
   FIL* fil = FilManager::Get()->GetFil(fil_idx);
   FRESULT res = f_open(fil, filename, FA_READ);
@@ -182,8 +182,8 @@ int ReadMapFile(const char* filename, CoordinateToHash* coordinate_map,
     return -1;
   }
   res = f_read(fil, reinterpret_cast<char*>(coordinate_map),
-               sizeof(CoordinateToHash) * (*size), &bytes_read);
-  if (res != FR_OK || bytes_read != sizeof(CoordinateToHash) * (*size)) {
+               sizeof(SampleInfo) * (*size), &bytes_read);
+  if (res != FR_OK || bytes_read != sizeof(SampleInfo) * (*size)) {
     f_close(fil);
     FilManager::Get()->ReturnFil(fil_idx);
     return res;

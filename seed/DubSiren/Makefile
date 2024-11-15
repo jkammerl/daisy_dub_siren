@@ -2,7 +2,7 @@
 TARGET = DubSiren
 
 # Sources
-CPP_SOURCES = main.cpp sample_search.cpp sdcard.cpp wav_file.cpp sample_player.cpp sample_manager.cpp adc.cpp switches.cpp sample_scanner.cpp
+CPP_SOURCES = main.cpp sample_info_storage.cpp sample_search.cpp sdcard.cpp wav_file.cpp sample_player.cpp sample_manager.cpp adc.cpp switches.cpp sample_scanner.cpp
 
 
 

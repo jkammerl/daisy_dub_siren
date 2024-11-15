@@ -46,7 +46,8 @@ int SampleManager::SdCardLoading() {
   return 0;
 }
 
-int SampleManager::TriggerSample(SdFile* sd_file, bool retrigger) {
+int SampleManager::TriggerSample(const SampleInfo& sample_info,
+                                 bool retrigger) {
   std::shared_ptr<SamplePlayerList> sample_player_new(new SamplePlayerList);
   auto sample_player_cached = sample_player_;
   *sample_player_new = *sample_player_cached;
@@ -54,28 +55,30 @@ int SampleManager::TriggerSample(SdFile* sd_file, bool retrigger) {
     // Remove currently playing samples.
     auto itr = sample_player_new->begin();
     while (itr != sample_player_new->end()) {
-      if ((*itr)->GetSdFile() == sd_file) {
+      if ((*itr)->GetSampleInfo().sdfile == sample_info.sdfile) {
         itr = sample_player_new->erase(itr);
       } else {
         ++itr;
       }
     }
   }
-  WavFile* wav_file = nullptr;
-  auto itr = std::find_if(
-      wav_files_.begin(), wav_files_.end(),
-      [&sd_file](const WavFile& wf) { return wf.GetSdFile() == sd_file; });
-  if (itr == wav_files_.end()) {
-    WavFile new_wav_file;
-    if (new_wav_file.Init(sd_file) == 0 && new_wav_file.IsInitialized()) {
-      wav_files_.push_back(std::move(new_wav_file));
-      wav_file = &wav_files_.back();
-    }
-  } else {
-    wav_file = &(*itr);
-  }
 
-  sample_player_new->push_back(wav_file->GetSamplePlayer());
+  // WavFile* wav_file = nullptr;
+  // auto itr = std::find_if(
+  //     wav_files_.begin(), wav_files_.end(),
+  //     [&sd_file](const WavFile& wf) { return wf.GetSdFile() == sd_file; });
+  // if (itr == wav_files_.end()) {
+  //   WavFile new_wav_file;
+  //   if (new_wav_file.Init(sd_file) == 0 && new_wav_file.IsInitialized()) {
+  //     wav_files_.push_back(std::move(new_wav_file));
+  //     wav_file = &wav_files_.back();
+  //   }
+  // } else {
+  //   wav_file = &(*itr);
+  // }
+
+  std::shared_ptr<SamplePlayer> sample_player(new SamplePlayer(&sample_info));
+  sample_player_new->push_back(sample_player);
 
   while (sample_player_new->size() >= kMaxSimultaneousSample) {
     sample_player_new->pop_front();

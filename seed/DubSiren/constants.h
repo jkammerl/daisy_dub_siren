@@ -2,6 +2,8 @@
 #ifndef CONSTANTS_H_
 #define CONSTANTS_H_
 
+static constexpr int kBufferSize = 512;
+
 static constexpr int kMaxWavFiles = 4096;
 static constexpr int kKdTreeMaxResults = 8;
 
@@ -12,7 +14,7 @@ static constexpr int kAnalysisSize = 1024;
 static constexpr int kPowerSpecSize = kAnalysisSize / 2 + 1;
 static constexpr int kOverlap = 2;
 
-static constexpr char* kCoordinatesMapFilename = "/cloud.data";
+static constexpr const char* kCoordinatesMapFilename = "/cloud.data";
 
 // Must be power of 2
 static constexpr int kNumMelBands = 32;

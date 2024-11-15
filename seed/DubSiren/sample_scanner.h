@@ -14,6 +14,8 @@
 #include "sample_search.h"
 #include "wav_file.h"
 
+struct SdFileWithHash;
+
 class SampleScanner {
  public:
   SampleScanner() = default;
@@ -21,12 +23,11 @@ class SampleScanner {
 
   int Init(daisy::DaisySeed* seed);
 
-  void PopulateSamples(SampleSearch* sample_search, daisy::DaisySeed* seed);
-
  private:
-  int AnalyzeFile(SdFile* sdfile, float* x, float* y, daisy::DaisySeed* seed);
+  int AnalyzeFile(SdFileWithHash* sdfile_with_hash, SampleInfo* sample_info,
+                  daisy::DaisySeed* seed);
 
-  void NormalizeCordMap();
+  void NormalizeCordMap(int num_sample_infos);
 
   FeatureGenerator feature_generator_;
   std::unordered_map<long, SdFile*> file_map_;

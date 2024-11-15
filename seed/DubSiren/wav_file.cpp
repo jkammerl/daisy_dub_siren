@@ -64,8 +64,8 @@ int WavFile::ParseWavHeader() {
   }
 
   // Read Wav header.
-  if (file_->Read((void*)&sample_info_.wav_header, sizeof(SampleInfo),
-                  &bytesread) != FR_OK) {
+  if (file_->Read((void*)&wav_header_, sizeof(WavHeader), &bytesread) !=
+      FR_OK) {
     return -1;
   }
 
@@ -81,12 +81,11 @@ int WavFile::ParseWavHeader() {
   }
 
   // Obtain number of samples.
-  sample_info_.num_samples = sample_info_.wav_header.SubCHunk2Size /
-                             (sample_info_.wav_header.BitPerSample / 8);
+  sample_info_.num_samples =
+      wav_header_.SubCHunk2Size / (wav_header_.BitPerSample / 8);
   if (sample_info_.num_samples == 0 && file_pos_bytes <= chunk_size + 8) {
     // Compute num samples from chunk size
-    sample_info_.num_samples =
-        chunk_size / (sample_info_.wav_header.BitPerSample / 8);
+    sample_info_.num_samples = chunk_size / (wav_header_.BitPerSample / 8);
   }
   sample_info_.samples_first_byte = file_pos_bytes;
   return 0;
@@ -100,9 +99,8 @@ int WavFile::Init(SdFile* sdfile) {
     return -1;
   }
 
-  if (sample_info_.wav_header.SampleRate != 48000 ||
-      sample_info_.wav_header.BitPerSample != 16 ||
-      sample_info_.wav_header.NbrChannels != 1) {
+  if (wav_header_.SampleRate != 48000 || wav_header_.BitPerSample != 16 ||
+      wav_header_.NbrChannels != 1) {
     return -1;
   }
 
@@ -110,30 +108,34 @@ int WavFile::Init(SdFile* sdfile) {
     return -1;
   }
 
-  int err = LoadInitBuffer();
   init_ = true;
 
-  return err;
+  return 0;
 }
 
-int WavFile::LoadInitBuffer() {
+int WavFile::PopulateSampleInfo(SampleInfo* sample_info) {
+  sample_info->num_samples = sample_info_.num_samples;
+  sample_info->samples_first_byte = sample_info_.samples_first_byte;
+  sample_info->sdfile = file_;
+  return ReadFirstBuffer(&sample_info->first_buffer);
+}
+
+int WavFile::ReadFirstBuffer(AudioBuffer* buffer) {
   if (file_->Seek(sample_info_.samples_first_byte) != FR_OK) {
     return -1;
   }
   const int num_request_samples =
-      std::min<int>(sample_info_.num_samples, kBufferSize);
+      std::min<int>(sample_info_.num_samples, buffer->samples.size());
   const size_t num_request_bytes = num_request_samples * sizeof(int16_t);
   size_t bytesread = 0;
   const int result =
-      file_->Read(&init_buffer_.data[0], num_request_bytes, &bytesread);
+      file_->Read(buffer->samples.data(), num_request_bytes, &bytesread);
   if (result != FR_OK) {
     return -1;
   }
-  init_buffer_.is_final_buffer_reached = num_request_bytes < kBufferSize ||
-                                         bytesread < num_request_bytes ||
-                                         file_->IsEof();
-  init_buffer_.size = bytesread / sizeof(int16_t);
-  return 0;
+  buffer->eob_reached = num_request_bytes < kBufferSize ||
+                        bytesread < num_request_bytes || file_->IsEof();
+  buffer->num_samples = bytesread / sizeof(int16_t);
 }
 
 void WavFile::Close() {

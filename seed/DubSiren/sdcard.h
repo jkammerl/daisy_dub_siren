@@ -25,11 +25,11 @@ void ReadDir(std::vector<std::string>& filenames,
              const std::vector<std::string>& filetypes, bool recursively,
              std::string path = "");
 
-int WriteMapFile(const char* filename, const CoordinateToHash* coordinate_map,
+int WriteMapFile(const char* filename, const SampleInfo& coordinate_map,
                  int size);
 
-int ReadMapFile(const char* filename, CoordinateToHash* coordinate_map,
-                int* size, int max_size);
+int ReadMapFile(const char* filename, SampleInfo* coordinate_map, int* size,
+                int max_size);
 
 class SdFile {
  public:

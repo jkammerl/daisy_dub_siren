@@ -11,43 +11,42 @@
 #include "sample_player_common.h"
 #include "sdcard.h"
 
+struct WavHeader {
+  uint16_t AudioFormat;   /**< & */
+  uint16_t NbrChannels;   /**< & */
+  uint32_t SampleRate;    /**< & */
+  uint32_t ByteRate;      /**< & */
+  uint16_t BlockAlign;    /**< & */
+  uint16_t BitPerSample;  /**< & */
+  uint32_t SubChunk2ID;   /**< & */
+  uint32_t SubCHunk2Size; /**< & */
+};
+
 class WavFile {
  public:
   WavFile() = default;
-  WavFile(WavFile&& other) {
-    file_ = std::move(other.file_);
-    sample_info_ = std::move(other.sample_info_);
-    init_buffer_ = std::move(other.init_buffer_);
-    init_ = other.init_;
-  };
   WavFile(const WavFile&) = delete;
-  WavFile& operator=(WavFile&&) = default;
 
   ~WavFile() { Close(); }
 
   int Init(SdFile* sdfile);
 
-  SdFile* GetSdFile() const { return file_; }
+  int PopulateSampleInfo(SampleInfo* sample_info);
 
-  std::shared_ptr<SamplePlayer> GetSamplePlayer() {
-    if (!init_) {
-      return nullptr;
-    }
-    return std::shared_ptr<SamplePlayer>(
-        new SamplePlayer(sample_info_, file_, init_buffer_));
-  }
+  int ReadFirstBuffer(AudioBuffer* buffer);
+
+  SdFile* GetSdFile() const { return file_; }
 
   bool IsInitialized() const { return init_; }
 
  private:
   int ParseWavHeader();
   int SkipToChunk(size_t* bytepos, const char* chunk_name, int32_t* chunk_size);
-  int LoadInitBuffer();
   void Close();
 
   SdFile* file_;
   SampleInfo sample_info_;
-  Buffer init_buffer_;
+  WavHeader wav_header_;
   bool init_ = false;
 };
 

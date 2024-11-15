@@ -19,7 +19,7 @@ class SampleManager {
 
   int Init(daisy::DaisySeed* seed);
 
-  int TriggerSample(SdFile* file, bool retrigger);
+  int TriggerSample(const SampleInfo& sample_info, bool retrigger);
 
   float GetSample();
 
@@ -33,7 +33,7 @@ class SampleManager {
 
   std::vector<std::string> files_;
   std::shared_ptr<SamplePlayerList> sample_player_;
-  std::list<WavFile> wav_files_;
+  // std::list<WavFile> wav_files_;
 };
 
 #endif  // SDCARD_H

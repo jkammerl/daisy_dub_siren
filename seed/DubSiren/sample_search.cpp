@@ -7,32 +7,24 @@
 #include "3p/nanoflann/include/nanoflann.hpp"
 #include "common.h"
 #include "daisy_seed.h"
-
-struct CoordinatesToSdFile {
-  float x, y;
-  SdFile* sdfile;
-};
-
-DSY_SDRAM_BSS CoordinatesToSdFile coordinates_to_sdfile[kMaxWavFiles];
-int num_coordinates_to_sdfile = 0;
+#include "sample_info_storage.h"
 
 struct PointCloud {
   using coord_t = float;  //!< The type of each coordinate
 
   // Must return the number of data points
-  inline size_t kdtree_get_point_count() const {
-    return num_coordinates_to_sdfile;
-  }
+  inline size_t kdtree_get_point_count() const { return GetNumSampleInfos(); }
 
   // Returns the dim'th component of the idx'th point in the class:
   // Since this is inlined and the "dim" argument is typically an immediate
   // value, the
   //  "if/else's" are actually solved at compile time.
   inline float kdtree_get_pt(const size_t idx, const size_t dim) const {
+    const SampleInfo& sample_info = GetSampleInfo(idx);
     if (dim == 0) {
-      return coordinates_to_sdfile[idx].x;
+      return sample_info.x;
     }
-    return coordinates_to_sdfile[idx].y;
+    return sample_info.y;
   }
 
   // Optional bounding-box computation: return false to default to a standard
@@ -53,16 +45,7 @@ using KdTree = nanoflann::KDTreeSingleIndexAdaptor<
 
 class SampleSearchImpl {
  public:
-  void AddSample(float x, float y, SdFile* wav_file) {
-    CoordinatesToSdFile& entry =
-        coordinates_to_sdfile[num_coordinates_to_sdfile];
-    entry.x = x;
-    entry.y = y;
-    entry.sdfile = wav_file;
-    ++num_coordinates_to_sdfile;
-  }
-
-  void ComputeKdTree() {
+  void Init() {
     kd_tree_ = std::unique_ptr<KdTree>(
         new KdTree(2 /*dim*/, cloud_, {10 /* max leaf */}));
     result_set_ =
@@ -70,10 +53,10 @@ class SampleSearchImpl {
     result_set_->init(return_indices_.data(), return_sqr_distances_.data());
   }
 
-  SdFile* Lookup(float x, float y) {
+  const SampleInfo& Lookup(float x, float y) {
     float query_pt[2] = {x, y};
     kd_tree_->findNeighbors(*result_set_, &query_pt[0]);
-    return coordinates_to_sdfile[return_indices_[0]].sdfile;
+    return GetSampleInfo(return_indices_[0]);
   }
 
  private:
@@ -88,12 +71,8 @@ class SampleSearchImpl {
 SampleSearch::SampleSearch() : sample_search_impl_(new SampleSearchImpl) {}
 SampleSearch::~SampleSearch() = default;
 
-void SampleSearch::AddSample(float x, float y, SdFile* wav_file) {
-  sample_search_impl_->AddSample(x, y, wav_file);
-}
+void SampleSearch::Init() { sample_search_impl_->Init(); }
 
-void SampleSearch::ComputeKdTree() { sample_search_impl_->ComputeKdTree(); }
-
-SdFile* SampleSearch::Lookup(float x, float y) {
+const SampleInfo& SampleSearch::Lookup(float x, float y) {
   return sample_search_impl_->Lookup(x, y);
 }

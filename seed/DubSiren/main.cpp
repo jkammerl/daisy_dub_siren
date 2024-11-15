@@ -9,7 +9,6 @@
 #include "adc.h"
 #include "daisy_seed.h"
 #include "daisysp.h"
-#include "delay.h"
 #include "sample_manager.h"
 #include "sample_scanner.h"
 #include "sample_search.h"
@@ -18,22 +17,11 @@
 using namespace daisy;
 using namespace daisysp;
 
-constexpr int kSirenPitchKnob = 9;
-constexpr int kLfoWave = 8;
-constexpr int kLfoDepthKnob = 7;
-constexpr int kLfoSpeedKnob = 6;
-
-constexpr int kDecay = 5;
-constexpr int kSampleSelect = 4;
-
-constexpr int kDelayLengthKnob = 3;
-constexpr int kDelayFeedbackKnob = 2;
-constexpr int kDelayMixKnob = 1;
-constexpr int kFilterKnob = 0;
-
-// constexpr int kReverbFeedback = 11;
-constexpr int kVolumeKnob = 10;
-constexpr int kExternVolume = 11;
+constexpr int kJoystickX = 0;
+constexpr int kJoystickY = 1;
+float joystick_x = 0.0f;
+float joystick_y = 0.0f;
+bool sample_triggered = false;
 
 // DaisyPatchSM hw;
 DaisySeed hw;
@@ -48,8 +36,6 @@ SampleScanner sample_scanner;
 SampleSearch sample_search;
 
 SampleManager sample_manager;
-
-int sample_triggered = -1;
 
 // float LinToLog(float input) {
 //   if (input < 0.5) {
@@ -70,21 +56,15 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
 
   fadc.UpdateValues();
 
-  float amp = LinToLog(fadc.GetValue(kVolumeKnob));
-
-  float sample_volume = LinToLog(fadc.GetValue(kExternVolume));
-  if (sample_volume < 0.01f) {
-    sample_volume = 0.0f;
-  }
+  joystick_x = fadc.GetValue(kJoystickX);
+  joystick_y = fadc.GetValue(kJoystickY);
 
   if (switches.Clicked(1)) {
-    float sample_val = fmap(fadc.GetValue(kSampleSelect), 0.0, 0.99);
-    // sample_triggered = sample_val * num_samples;
+    sample_triggered = true;
   }
 
   for (size_t i = 0; i < size; i++) {
-    const float sample = sample_manager.GetSample() * sample_volume;
-
+    const float sample = sample_manager.GetSample();
     OUT_L[i] = sample;
     OUT_R[i] = sample;
   }
@@ -115,8 +95,7 @@ int main(void) {
   hw.PrintLine("Daisy Patch SM started.");
 
   sample_scanner.Init(&hw);
-  sample_scanner.PopulateSamples(&sample_search, &hw);
-  sample_search.ComputeKdTree();
+  sample_search.Init();
   hw.PrintLine("Search is ready.");
 
   sample_manager.Init(&hw);
@@ -141,11 +120,13 @@ int main(void) {
     }
 
     hw.DelayMs(1);
-    if (sample_triggered >= 0) {
-      // sample_manager.TriggerSample(sample_triggered, /*retrigger=*/true);
-      hw.PrintLine("Trigger: %d, %d", sample_triggered,
-                   fadc.GetInt(kSampleSelect));
-      sample_triggered = -1;
+    if (sample_triggered) {
+      const SampleInfo& sample_info =
+          sample_search.Lookup(joystick_x, joystick_y);
+      if (sample_manager.TriggerSample(sample_info, true) != 0) {
+        hw.PrintLine("Error triggering sample");
+      }
+      sample_triggered = false;
     }
 
     if (int err = sample_manager.SdCardLoading()) {
