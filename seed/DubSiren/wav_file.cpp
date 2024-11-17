@@ -91,7 +91,7 @@ int WavFile::ParseWavHeader() {
   return 0;
 }
 
-int WavFile::Init(SdFile* sdfile) {
+int WavFile::Init(SdFile* sdfile, SampleInfo* sample_info) {
   file_ = sdfile;
   file_->ReOpen();
 
@@ -108,22 +108,12 @@ int WavFile::Init(SdFile* sdfile) {
     return -1;
   }
 
-  init_ = true;
-
-  return 0;
-}
-
-int WavFile::PopulateSampleInfo(SampleInfo* sample_info) {
   sample_info->num_samples = sample_info_.num_samples;
   sample_info->samples_first_byte = sample_info_.samples_first_byte;
   sample_info->sdfile = file_;
-  return ReadFirstBuffer(&sample_info->first_buffer);
-}
 
-int WavFile::ReadFirstBuffer(AudioBuffer* buffer) {
-  if (file_->Seek(sample_info_.samples_first_byte) != FR_OK) {
-    return -1;
-  }
+  AudioBuffer* buffer = &sample_info->first_buffer;
+
   const int num_request_samples =
       std::min<int>(sample_info_.num_samples, buffer->samples.size());
   const size_t num_request_bytes = num_request_samples * sizeof(int16_t);
@@ -136,6 +126,10 @@ int WavFile::ReadFirstBuffer(AudioBuffer* buffer) {
   buffer->eob_reached = num_request_bytes < kBufferSize ||
                         bytesread < num_request_bytes || file_->IsEof();
   buffer->num_samples = bytesread / sizeof(int16_t);
+
+  init_ = true;
+
+  return 0;
 }
 
 void WavFile::Close() {

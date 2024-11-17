@@ -2,7 +2,17 @@
 #ifndef COMMON_H_
 #define COMMON_H_
 
+#include <array>
+
 #include "constants.h"
+#include "daisy_seed.h"
+
+using namespace daisy;
+
+class DaisyHw {
+ public:
+  static DaisySeed& Get();
+};
 
 class SdFile;
 
@@ -10,10 +20,6 @@ struct AudioBuffer {
   std::array<int16_t, kBufferSize> samples;
   int num_samples;
   bool eob_reached;
-
-  AudioBuffer() = default;
-  AudioBuffer(const AudioBuffer&) = delete;
-  AudioBuffer& operator=(const AudioBuffer&) = delete;
 };
 
 struct SampleInfo {

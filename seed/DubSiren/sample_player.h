@@ -17,7 +17,10 @@ class SamplePlayer {
     next_buffer_ = &buffer_[1];
     is_playing_ = true;
     read_pos_samples_ = sample_info->first_buffer.num_samples;
+    sdfile_ = sample_info->sdfile;
+    sdfile_->ReOpen();
   }
+  ~SamplePlayer() { sdfile_->Close(); }
 
   void Play() { is_playing_ = true; }
 
@@ -68,6 +71,7 @@ class SamplePlayer {
 
  private:
   const SampleInfo* sample_info_;
+  SdFile* sdfile_;
 
   const AudioBuffer* current_buffer_;
   AudioBuffer* next_buffer_;

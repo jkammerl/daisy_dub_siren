@@ -5,7 +5,7 @@
 static constexpr int kBufferSize = 512;
 
 static constexpr int kMaxWavFiles = 4096;
-static constexpr int kKdTreeMaxResults = 8;
+static constexpr int kKdTreeMaxResults = 1;
 
 static constexpr int kSampleRate = 48000;
 static constexpr float kNyquist = kSampleRate / 2.0;
@@ -13,6 +13,8 @@ static constexpr float kNyquist = kSampleRate / 2.0;
 static constexpr int kAnalysisSize = 1024;
 static constexpr int kPowerSpecSize = kAnalysisSize / 2 + 1;
 static constexpr int kOverlap = 2;
+
+static constexpr int kMaxMfccs = kSampleRate * 10 / (kAnalysisSize / kOverlap);
 
 static constexpr const char* kCoordinatesMapFilename = "/cloud.data";
 

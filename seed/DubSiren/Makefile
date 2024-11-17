@@ -2,7 +2,7 @@
 TARGET = DubSiren
 
 # Sources
-CPP_SOURCES = main.cpp sample_info_storage.cpp sample_search.cpp sdcard.cpp wav_file.cpp sample_player.cpp sample_manager.cpp adc.cpp switches.cpp sample_scanner.cpp
+CPP_SOURCES = main.cpp common.cpp feature_generator.cpp sample_info_storage.cpp sample_search.cpp sdcard.cpp wav_file.cpp sample_player.cpp sample_manager.cpp adc.cpp switches.cpp sample_scanner.cpp
 
 
 
@@ -22,7 +22,7 @@ C_INCLUDES += \
 -Iresources \
 -I../..
 
-#LDFLAGS = -u _printf_float
+LDFLAGS = -u _printf_float
 APP_TYPE = BOOT_SRAM
 
 # Library Locations

@@ -24,7 +24,7 @@ float joystick_y = 0.0f;
 bool sample_triggered = false;
 
 // DaisyPatchSM hw;
-DaisySeed hw;
+
 TimerHandle timer;
 Switches switches;
 
@@ -32,7 +32,6 @@ Limiter limiter_left;
 Limiter limiter_right;
 FilteredAdc fadc;
 
-SampleScanner sample_scanner;
 SampleSearch sample_search;
 
 SampleManager sample_manager;
@@ -74,6 +73,7 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
 }
 
 void OutputStats() {
+  auto& hw = DaisyHw::Get();
   for (int i = 0; i < 12; ++i) {
     hw.PrintLine("Knob: %d, %d", i, fadc.GetInt(i));
   }
@@ -83,6 +83,7 @@ void OutputStats() {
 }
 
 int main(void) {
+  auto& hw = DaisyHw::Get();
   hw.Init();
   hw.SetAudioBlockSize(16);
 
@@ -94,7 +95,10 @@ int main(void) {
   hw.StartLog(true);
   hw.PrintLine("Daisy Patch SM started.");
 
-  sample_scanner.Init(&hw);
+  {
+    SampleScanner sample_scanner;
+    sample_scanner.Init(&hw);
+  }
   sample_search.Init();
   hw.PrintLine("Search is ready.");
 
@@ -115,14 +119,17 @@ int main(void) {
     uint32_t newTick = timer.GetTick();
     float interval_sec = (float)(newTick - lastTime) / (float)freq;
     if (interval_sec > 1.f) {
-      OutputStats();
+      // OutputStats();
       lastTime = newTick;
     }
 
     hw.DelayMs(1);
     if (sample_triggered) {
+      hw.PrintLine("Query coord %f, %f", joystick_x, joystick_y);
       const SampleInfo& sample_info =
           sample_search.Lookup(joystick_x, joystick_y);
+      hw.PrintLine("Found coord %f, %f", sample_info.x, sample_info.y);
+
       if (sample_manager.TriggerSample(sample_info, true) != 0) {
         hw.PrintLine("Error triggering sample");
       }

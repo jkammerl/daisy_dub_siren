@@ -29,11 +29,7 @@ class WavFile {
 
   ~WavFile() { Close(); }
 
-  int Init(SdFile* sdfile);
-
-  int PopulateSampleInfo(SampleInfo* sample_info);
-
-  int ReadFirstBuffer(AudioBuffer* buffer);
+  int Init(SdFile* sdfile, SampleInfo* sample_info);
 
   SdFile* GetSdFile() const { return file_; }
 

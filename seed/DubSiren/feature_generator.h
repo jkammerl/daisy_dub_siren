@@ -11,9 +11,14 @@
 #include "mfcc_generator.h"
 #include "windower.h"
 
+std::array<float, kNumMelBands>* GetMfccBuffer(int i);
+
 class FeatureGenerator {
  public:
-  void Init() { mfcc_.Init(); }
+  void Init() {
+    mfcc_.Init();
+    num_mfccs_ = 0;
+  }
 
   void AddSample(float input) {
     if (windower_.AddSample(input)) {
@@ -30,15 +35,15 @@ class FeatureGenerator {
   void GetCloudCoordinates(float* x, float* y) {
     GetFeatures(&feature_vec_);
     ComputeCoordinates(feature_vec_, x, y);
-    mfcc_vec_.clear();
+    num_mfccs_ = 0;
   }
 
  private:
   void ComputeMfccs() {
     std::cout << "ComputeMfccs\n";
     windower_.GetBuffer(&analysis_buffer_);
-    auto mfccs = mfcc_.ComputeMfccs(analysis_buffer_);
-    mfcc_vec_.push_back(std::move(mfccs));
+    mfcc_.ComputeMfccs(analysis_buffer_, GetMfccBuffer(num_mfccs_));
+    ++num_mfccs_;
   }
 
   std::pair<float, float> ComputeMeanAndStd(const std::vector<float>& data) {
@@ -72,7 +77,7 @@ class FeatureGenerator {
       ComputeMfccs();
     }
 
-    if (mfcc_vec_.empty()) {
+    if (num_mfccs_ == 0) {
       std::cout << "mfcc_vec_ is empty";
       return;
     }
@@ -81,21 +86,26 @@ class FeatureGenerator {
     std::array<float, kNumMelBands> mel_avg_mean_features;
 
     std::vector<float> mel_over_time;
-    mel_over_time.resize(mfcc_vec_.size());
+    mel_over_time.resize(num_mfccs_);
     for (int m = 0; m < kNumMelBands; ++m) {
-      for (int t = 0; t < static_cast<int>(mfcc_vec_.size()); ++t) {
-        mel_over_time[t] = mfcc_vec_[t][m];
+      for (int t = 0; t < num_mfccs_; ++t) {
+        const auto* mfcc = GetMfccBuffer(t);
+        mel_over_time[t] = (*mfcc)[m];
       }
       std::pair<float, float> result = ComputeMeanAndStd(mel_over_time);
       mel_mean_features[m] = result.first;
       mel_std_features[m] = result.second;
 
       double avg_sum = 0.0f;
-      for (int t = 0; t < static_cast<int>(mfcc_vec_.size()) - 2; t += 2) {
-        avg_sum += mfcc_vec_[t][m] - mfcc_vec_[t + 1][m];
+      if (num_mfccs_ > 2) {
+        for (int t = 0; t < num_mfccs_ - 2; t += 2) {
+          const auto& mfcc_t = *GetMfccBuffer(t);
+          const auto& mfcc_t_plus_one = *GetMfccBuffer(t + 1);
+          avg_sum += mfcc_t[m] - mfcc_t_plus_one[m];
+        }
+        avg_sum /= num_mfccs_ - 2;
       }
-
-      mel_avg_mean_features[m] = avg_sum / (mfcc_vec_.size() - 2);
+      mel_avg_mean_features[m] = avg_sum;
     }
     std::copy(mel_mean_features.begin(), mel_mean_features.end(),
               feature_vec->begin() + kNumMelBands * 0);
@@ -117,9 +127,10 @@ class FeatureGenerator {
   }
 
   MfccGenerator mfcc_;
+  int num_mfccs_;
   std::array<float, kAnalysisSize> analysis_buffer_;
   Windower<kAnalysisSize, kOverlap> windower_;
-  std::vector<std::array<float, kNumMelBands>> mfcc_vec_;
+  // std::vector<std::array<float, kNumMelBands>> mfcc_vec_;
   std::array<float, kFeatureVecLen> feature_vec_;
 };
 

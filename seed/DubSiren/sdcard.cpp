@@ -274,7 +274,7 @@ bool SdFile::IsEof() const {
 }
 
 void SdFile::Close() {
-  FIL* fil = FilManager::Get()->GetFil(fil_idx_);
-  f_close(fil);
+  // FIL* fil = FilManager::Get()->GetFil(fil_idx_);
+  //  f_close(fil);
   FilManager::Get()->ReturnFil(fil_idx_);
 }

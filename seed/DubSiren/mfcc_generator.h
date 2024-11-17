@@ -20,13 +20,11 @@ class MfccGenerator {
     mel_dct_.Init();
   }
 
-  std::array<float, kNumMelBands> ComputeMfccs(
-      const std::array<float, kAnalysisSize>& buffer) {
+  void ComputeMfccs(const std::array<float, kAnalysisSize>& buffer,
+                    std::array<float, kNumMelBands>* result) {
     ps_.ComputeSpectrum(buffer, &power_spec_);
     ComputeLogMelEnergy(power_spec_, &log_mel_energy_);
-    std::array<float, kNumMelBands> result;
-    mel_dct_.Transform(log_mel_energy_, &result);
-    return result;
+    mel_dct_.Transform(log_mel_energy_, result);
   }
 
  private:

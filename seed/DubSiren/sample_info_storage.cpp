@@ -4,16 +4,16 @@
 
 using namespace daisy;
 
-std::array<SampleInfo, kMaxWavFiles> DSY_SDRAM_BSS g_memory;
+SampleInfo DSY_SDRAM_BSS g_memory[kMaxWavFiles];
 int g_num_sample_infos;
 
 const SampleInfo& GetSampleInfo(int id) {
-  assert(id >= 0 && id < g_memory.size());
+  assert(id >= 0 && id < kMaxWavFiles);
   return g_memory[id];
 }
 
 SampleInfo* GetMutableSampleInfo(int id) {
-  assert(id >= 0 && id < g_memory.size());
+  assert(id >= 0 && id < kMaxWavFiles);
   return &g_memory[id];
 }
 void SetNumSampleInfos(int num_sample_infos) {

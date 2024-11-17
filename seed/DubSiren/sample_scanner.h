@@ -5,8 +5,6 @@
 #include <list>
 #include <memory>
 #include <string>
-#include <unordered_map>
-#include <vector>
 
 #include "common.h"
 #include "feature_generator.h"
@@ -30,7 +28,6 @@ class SampleScanner {
   void NormalizeCordMap(int num_sample_infos);
 
   FeatureGenerator feature_generator_;
-  std::unordered_map<long, SdFile*> file_map_;
 };
 
 #endif  // SAMPLE_SCANNER_H_

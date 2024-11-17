@@ -64,7 +64,7 @@ int SampleScanner::Init(daisy::DaisySeed* seed) {
                     g_num_sample_infos, kCoordinatesMapFilename);
   }
 
-  bool rescan_needed = true;  // g_num_sample_infos == 0;
+  const bool rescan_needed = g_num_sample_infos == 0;
 
   if (rescan_needed) {
     g_num_sample_infos = 0;
@@ -72,6 +72,7 @@ int SampleScanner::Init(daisy::DaisySeed* seed) {
       auto& sdfile_with_hash = sdfiles_with_hash[g_num_sample_infos];
       seed->PrintLine("Processing file %d", i);
       SampleInfo* sample_info = GetMutableSampleInfo(g_num_sample_infos);
+      seed->PrintLine("GetMutableSampleInfo done");
       if (AnalyzeFile(&sdfile_with_hash, sample_info, seed) != 0) {
         seed->PrintLine("Can't read/analyze file");
         continue;
@@ -145,12 +146,8 @@ int SampleScanner::AnalyzeFile(SdFileWithHash* sdfile_with_hash,
                                SampleInfo* sample_info,
                                daisy::DaisySeed* seed) {
   WavFile new_streamer;
-  int err = new_streamer.Init(&sdfile_with_hash->sdfile);
+  int err = new_streamer.Init(&sdfile_with_hash->sdfile, sample_info);
   if (err != 0 || !new_streamer.IsInitialized()) {
-    return -1;
-  }
-  err = new_streamer.PopulateSampleInfo(sample_info);
-  if (err != 0) {
     return -1;
   }
 

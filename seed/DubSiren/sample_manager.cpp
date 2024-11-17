@@ -55,7 +55,7 @@ int SampleManager::TriggerSample(const SampleInfo& sample_info,
     // Remove currently playing samples.
     auto itr = sample_player_new->begin();
     while (itr != sample_player_new->end()) {
-      if ((*itr)->GetSampleInfo().sdfile == sample_info.sdfile) {
+      if ((*itr)->GetSampleInfo().hash == sample_info.hash) {
         itr = sample_player_new->erase(itr);
       } else {
         ++itr;
