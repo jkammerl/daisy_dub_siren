@@ -8,6 +8,7 @@
 #include <numeric>
 #include <vector>
 
+#include "common.h"
 #include "mfcc_generator.h"
 #include "windower.h"
 
@@ -18,6 +19,7 @@ class FeatureGenerator {
   void Init() {
     mfcc_.Init();
     num_mfccs_ = 0;
+    windower_.Reset();
   }
 
   void AddSample(float input) {
@@ -42,7 +44,19 @@ class FeatureGenerator {
   void ComputeMfccs() {
     std::cout << "ComputeMfccs\n";
     windower_.GetBuffer(&analysis_buffer_);
-    mfcc_.ComputeMfccs(analysis_buffer_, GetMfccBuffer(num_mfccs_));
+    if (num_mfccs_ == 0) {
+      for (int i = 0; i < 10; ++i) {
+        DaisyHw::Get().PrintLine("Windowed buffer: %d %f", i,
+                                 analysis_buffer_[i]);
+      }
+    }
+    auto* mfcc_buffer = GetMfccBuffer(num_mfccs_);
+    mfcc_.ComputeMfccs(analysis_buffer_, mfcc_buffer, num_mfccs_ == 0);
+    if (num_mfccs_ == 0) {
+      for (int i = 0; i < mfcc_buffer->size(); ++i) {
+        DaisyHw::Get().PrintLine("MFCC: %d %f", num_mfccs_, (*mfcc_buffer)[i]);
+      }
+    }
     ++num_mfccs_;
   }
 
@@ -113,6 +127,8 @@ class FeatureGenerator {
               feature_vec->begin() + kNumMelBands * 1);
     std::copy(mel_avg_mean_features.begin(), mel_avg_mean_features.end(),
               feature_vec->begin() + kNumMelBands * 2);
+
+    windower_.Reset();
   }
 
   void ComputeCoordinates(const std::array<float, kFeatureVecLen>& features,

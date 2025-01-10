@@ -8,6 +8,7 @@
 #include <numeric>
 #include <vector>
 
+#include "common.h"
 #include "constants.h"
 #include "transforms.h"
 
@@ -21,9 +22,26 @@ class MfccGenerator {
   }
 
   void ComputeMfccs(const std::array<float, kAnalysisSize>& buffer,
-                    std::array<float, kNumMelBands>* result) {
+                    std::array<float, kNumMelBands>* result, bool debug) {
+    if (debug) {
+      for (int i = 0; i < 10; ++i) {
+        DaisyHw::Get().PrintLine("Samples %d %f", i, buffer[i]);
+      }
+    }
     ps_.ComputeSpectrum(buffer, &power_spec_);
+    if (debug) {
+      for (int i = 0; i < 10; ++i) {
+        DaisyHw::Get().PrintLine("Spec %d %f", i, power_spec_[i]);
+      }
+    }
+
     ComputeLogMelEnergy(power_spec_, &log_mel_energy_);
+    if (debug) {
+      for (int i = 0; i < 10; ++i) {
+        DaisyHw::Get().PrintLine("LSpec %d %f", i, log_mel_energy_[i]);
+      }
+    }
+
     mel_dct_.Transform(log_mel_energy_, result);
   }
 

@@ -26,18 +26,28 @@ template <int Size, int Overlap>
 class Windower {
  public:
   static constexpr int WindowStep = Size / Overlap;
-  Windower() : write_pos_(0) {
+  Windower() {
     std::fill(buffer_.begin(), buffer_.end(), 0.0f);
+    Reset();
   };
+
+  void Reset() {
+    write_pos_ = 0;
+    num_samples_to_first_frame_ = 0;
+  }
+
   // returns true when window available.
   bool AddSample(float sample) {
-    if (num_samples_to_first_frame < Size) {
-      ++num_samples_to_first_frame;
+    if (num_samples_to_first_frame_ < Size) {
+      ++num_samples_to_first_frame_;
     }
     buffer_[write_pos_] = sample;  // preemphasis_.Apply(sample);
-    write_pos_ = (++write_pos_) % Size;
+    ++write_pos_;
+    if (write_pos_ >= Size) {
+      write_pos_ -= Size;
+    }
     const bool window_available = (write_pos_ % WindowStep) == 0;
-    const bool first_frame_available = num_samples_to_first_frame == Size;
+    const bool first_frame_available = num_samples_to_first_frame_ == Size;
     return window_available && first_frame_available;
   }
 
@@ -52,19 +62,22 @@ class Windower {
   }
 
   void GetBuffer(std::array<float, Size>* buffer) {
-    int read_pos = write_pos_;
+    int read_pos = write_pos_ % Size;
     auto it = buffer->begin();
     for (int i = 0; i < Size; ++i, ++it) {
       *it = buffer_[read_pos];
-      read_pos = (++read_pos) % Size;
+      ++read_pos;
+      if (read_pos >= Size) {
+        read_pos -= Size;
+      }
     }
   }
 
  private:
   // PreemphasisFilter preemphasis_;
   std::array<float, Size> buffer_;
-  int write_pos_ = 0;
-  int num_samples_to_first_frame = 0;
+  int write_pos_;
+  int num_samples_to_first_frame_;
 };
 
 #endif  // WINDOWER_H_

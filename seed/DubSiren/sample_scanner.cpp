@@ -11,6 +11,7 @@
 using namespace daisy;
 
 struct SdFileWithHash {
+  char filename[64];
   SdFile sdfile;
   unsigned long hash;
 };
@@ -31,11 +32,18 @@ int SampleScanner::Init(daisy::DaisySeed* seed) {
   feature_generator_.Init();
 
   auto callback = [&](const std::string& filename) -> bool {
+    seed->PrintLine("Found: %s", filename.c_str());
+
     if (num_sdfiles_with_hash >= kMaxWavFiles) {
       return false;
     }
     auto& sdfile_with_hash = sdfiles_with_hash[num_sdfiles_with_hash];
     sdfile_with_hash.sdfile.Open(filename.c_str());
+
+    const int filename_len =
+        std::min<int>(filename.size(), sizeof(sdfile_with_hash.filename) - 1);
+    strncpy(sdfile_with_hash.filename, filename.c_str(), filename_len);
+    sdfile_with_hash.filename[filename_len] = 0;
 
     sdfile_with_hash.sdfile.Close();
     sdfile_with_hash.hash = SimpleHash(filename.c_str());
@@ -44,7 +52,7 @@ int SampleScanner::Init(daisy::DaisySeed* seed) {
   };
   seed->PrintLine("Scanning SD card for wav files");
   // TODO exclude .trash
-  ReadDir(callback, {".wav", ".WAV", ".Wav"}, true);
+  ReadDir(callback, {".test.wav", ".test.WAV", ".test.Wav"}, true);
   seed->PrintLine("Found %d wav files", num_sdfiles_with_hash);
 
   std::sort(std::begin(sdfiles_with_hash),
@@ -64,13 +72,16 @@ int SampleScanner::Init(daisy::DaisySeed* seed) {
                     g_num_sample_infos, kCoordinatesMapFilename);
   }
 
-  const bool rescan_needed = g_num_sample_infos == 0;
+  const bool rescan_needed = true;
+  //      g_num_sample_infos == 0 || num_sdfiles_with_hash !=
+  //      g_num_sample_infos;
 
   if (rescan_needed) {
+    seed->PrintLine("Rescanning %d files", num_sdfiles_with_hash);
     g_num_sample_infos = 0;
     for (int i = 0; i < num_sdfiles_with_hash; ++i) {
       auto& sdfile_with_hash = sdfiles_with_hash[g_num_sample_infos];
-      seed->PrintLine("Processing file %d", i);
+      seed->PrintLine("Processing file %d: %s", i, sdfile_with_hash.filename);
       SampleInfo* sample_info = GetMutableSampleInfo(g_num_sample_infos);
       seed->PrintLine("GetMutableSampleInfo done");
       if (AnalyzeFile(&sdfile_with_hash, sample_info, seed) != 0) {
@@ -153,17 +164,25 @@ int SampleScanner::AnalyzeFile(SdFileWithHash* sdfile_with_hash,
 
   sample_info->sdfile = &sdfile_with_hash->sdfile;
   sample_info->hash = sdfile_with_hash->hash;
+  strcpy(sample_info->filename, sdfile_with_hash->filename);
 
   SamplePlayer sample_player(sample_info);
+  seed->PrintLine("Num samples from info: %d", sample_info->num_samples);
+
   sample_player.Play();
   int num_samples = 0;
   while (sample_player.IsPlaying()) {
+    const float sample = sample_player.GetSample() / 32768.0f;
+    if (num_samples < 2000) {
+      seed->PrintLine("Samples %d: %f", num_samples, sample);
+    }
     sample_player.Prepare();
     ++num_samples;
-    feature_generator_.AddSample(sample_player.GetSample() / 32768.0f);
+    feature_generator_.AddSample(sample);
   }
-  seed->PrintLine("Computing coordinates");
   feature_generator_.GetCloudCoordinates(&sample_info->x, &sample_info->y);
   seed->PrintLine("Computing coordinates done");
+  seed->PrintLine("Nun samples: %d", num_samples);
+  seed->PrintLine("Computing coordinates (num_samples: %d)", num_samples);
   return 0;
 }

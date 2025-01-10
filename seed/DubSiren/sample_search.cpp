@@ -22,10 +22,7 @@ struct PointCloud {
   //  "if/else's" are actually solved at compile time.
   inline float kdtree_get_pt(const size_t idx, const size_t dim) const {
     auto& hw = DaisyHw::Get();
-    hw.PrintLine("kdtree_get_pt idx: %d", idx);
     const SampleInfo& sample_info = GetSampleInfo(idx);
-    hw.PrintLine("sample_info: %d, %d", (int)(sample_info.x * 100),
-                 (int)(sample_info.y * 100));
     if (dim == 0) {
       return sample_info.x;
     }
@@ -55,7 +52,7 @@ class SampleSearchImpl {
   void Init() {
     cloud_ = std::unique_ptr<PointCloud>(new PointCloud(GetNumSampleInfos()));
     kd_tree_ = std::unique_ptr<KdTree>(
-        new KdTree(2 /*dim*/, *cloud_, {6 /* max leaf */}));
+        new KdTree(2 /*dim*/, *cloud_, {4 /* max leaf */}));
     result_set_ =
         std::make_unique<nanoflann::KNNResultSet<float>>(kKdTreeMaxResults);
     result_set_->init(return_indices_.data(), return_sqr_distances_.data());

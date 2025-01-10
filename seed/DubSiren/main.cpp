@@ -9,9 +9,10 @@
 #include "adc.h"
 #include "daisy_seed.h"
 #include "daisysp.h"
+#include "sample_info_storage.h"
 #include "sample_manager.h"
 #include "sample_scanner.h"
-#include "sample_search.h"
+// #include "sample_search.h"
 #include "switches.h"
 
 using namespace daisy;
@@ -99,7 +100,7 @@ int main(void) {
     SampleScanner sample_scanner;
     sample_scanner.Init(&hw);
   }
-  sample_search.Init();
+  //  sample_search.Init();
   hw.PrintLine("Search is ready.");
 
   sample_manager.Init(&hw);
@@ -125,10 +126,25 @@ int main(void) {
 
     hw.DelayMs(1);
     if (sample_triggered) {
-      hw.PrintLine("Query coord %f, %f", joystick_x, joystick_y);
-      const SampleInfo& sample_info =
-          sample_search.Lookup(joystick_x, joystick_y);
-      hw.PrintLine("Found coord %f, %f", sample_info.x, sample_info.y);
+      // hw.PrintLine("Query coord %f, %f", joystick_x, joystick_y);
+      // const SampleInfo& sample_info =
+      //     sample_search.Lookup(joystick_x, joystick_y);
+      // hw.PrintLine("Found coord %f, %f", sample_info.x, sample_info.y);
+      int best_sample = -1;
+      float best_dist = std::numeric_limits<float>::max();
+      int num_samples = GetNumSampleInfos();
+      for (int i = 0; i < num_samples; ++i) {
+        const SampleInfo& sample_info = GetSampleInfo(i);
+        const float xdist = sample_info.x - joystick_x;
+        const float ydist = sample_info.y - joystick_y;
+        float dist = xdist * xdist + ydist * ydist;
+        if (dist < best_dist) {
+          best_dist = dist;
+          best_sample = i;
+        }
+      }
+      const SampleInfo& sample_info = GetSampleInfo(best_sample);
+      hw.PrintLine("Triggering sample: %s", sample_info.filename);
 
       if (sample_manager.TriggerSample(sample_info, true) != 0) {
         hw.PrintLine("Error triggering sample");

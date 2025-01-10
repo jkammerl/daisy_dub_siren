@@ -30,6 +30,7 @@ struct SampleInfo {
   int num_samples;
   float x;
   float y;
+  char filename[64];
 
   SampleInfo() = default;
   SampleInfo(const SampleInfo&) = delete;

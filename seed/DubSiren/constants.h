@@ -2,6 +2,7 @@
 #ifndef CONSTANTS_H_
 #define CONSTANTS_H_
 
+// Sample playback
 static constexpr int kBufferSize = 512;
 
 static constexpr int kMaxWavFiles = 4096;
