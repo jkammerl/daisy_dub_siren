@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 
+#include "compressor.h"
 #include "daisy_patch.h"
 #include "daisysp.h"
 #include "sample_player_common.h"
@@ -21,6 +22,7 @@ class SamplePlayer {
         next_buffer_(&buffer_[1]),
         is_playing_(true) {
     read_pos_samples_ = init_buffer.size;
+    normalizer_.Init(static_cast<float>(wav_file_info.wav_header.SampleRate));
   }
 
   SamplePlayer(const SamplePlayer&) = delete;
@@ -33,18 +35,18 @@ class SamplePlayer {
 
   int GetNumUnderuns() const { return buffer_underruns_; }
 
-  int16_t GetSample() {
+  float GetSample() {
     if (!is_playing_) {
-      return 0;
+      return 0.0f;
     }
     if (current_buffer_->size == 0) {
       is_playing_ = false;
-      return 0;
+      return 0.0f;
     }
 
     // When starting playback of a new buffer, signal the filling of a new one.
     bool should_trigger_fill_next_buffer = play_pos_idx_ == 0;
-    const int16_t samp = current_buffer_->data[play_pos_idx_];
+    const float samp = current_buffer_->data[play_pos_idx_] / 32768.0f;
 
     ++play_pos_idx_;
     if ((play_pos_idx_ >= current_buffer_->size)) {
@@ -64,7 +66,7 @@ class SamplePlayer {
     if (should_trigger_fill_next_buffer) {
       fill_next_buffer_ = true;
     }
-    return samp;
+    return normalizer_.Process(samp);
   }
 
   int Prepare();
@@ -88,6 +90,7 @@ class SamplePlayer {
   int read_pos_samples_ = 0;
 
   int buffer_underruns_ = 0;
+  LoudnessNormalizer normalizer_;
 };
 
 #endif  // PLAY_HEAD_H_

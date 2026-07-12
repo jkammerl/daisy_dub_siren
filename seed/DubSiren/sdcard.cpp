@@ -81,16 +81,15 @@ int SdFile::Read(void* buffer, size_t num_bytes, size_t* bytes_read) {
   *bytes_read = 0;
   int result = FR_OK;
   char* buffer_ptr = reinterpret_cast<char*>(buffer);
-  UINT chunk_read_bytes = -1;
-  while ((*bytes_read) < num_bytes && result == FR_OK &&
-         chunk_read_bytes != 0) {
+  UINT chunk_read_bytes = 0;
+  do {
     const size_t bytes_left = num_bytes - *bytes_read;
     const size_t bytes_to_read = std::min(bytes_left, kMaxReadBytes);
     result = f_read(&fil_, reinterpret_cast<void*>(buffer_ptr), bytes_to_read,
                     &chunk_read_bytes);
     *bytes_read += chunk_read_bytes;
     buffer_ptr += chunk_read_bytes;
-  }
+  } while (*bytes_read < num_bytes && result == FR_OK && chunk_read_bytes != 0);
   return result;
 }
 
