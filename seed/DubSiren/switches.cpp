@@ -31,9 +31,11 @@ void Switches::Update() {
 }
 
 bool Switches::Pressed(int switch_idx) const {
+  if (switch_idx < 0 || switch_idx >= kNumSwitches) return false;
   return switches_[switch_idx].Pressed();
 }
 
 bool Switches::Clicked(int switch_idx) const {
+  if (switch_idx < 0 || switch_idx >= kNumSwitches) return false;
   return switch_down_event_[switch_idx];
 }

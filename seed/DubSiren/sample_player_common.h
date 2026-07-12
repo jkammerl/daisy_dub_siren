@@ -6,15 +6,14 @@
 
 static constexpr int kBufferSize = 4096 / 4;
 
+// Mirrors the 16-byte "fmt " chunk body for PCM (AudioFormat == 1).
 struct WavHeader {
-  uint16_t AudioFormat;   /**< & */
-  uint16_t NbrChannels;   /**< & */
-  uint32_t SampleRate;    /**< & */
-  uint32_t ByteRate;      /**< & */
-  uint16_t BlockAlign;    /**< & */
-  uint16_t BitPerSample;  /**< & */
-  uint32_t SubChunk2ID;   /**< & */
-  uint32_t SubCHunk2Size; /**< & */
+  uint16_t AudioFormat;  // 1 = PCM
+  uint16_t NbrChannels;
+  uint32_t SampleRate;
+  uint32_t ByteRate;
+  uint16_t BlockAlign;
+  uint16_t BitPerSample;
 };
 
 struct SampleInfo {

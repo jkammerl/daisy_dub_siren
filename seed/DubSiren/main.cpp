@@ -174,7 +174,7 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
     osc.SetFreq(freq_lfo);
 
     const float sample = sample_manager.GetSample() * sample_volume;
-    float sig = osc.Process() * amp + sample * sample_volume;
+    float sig = osc.Process() * amp + sample;
     float delay_input = sig + echo_in_mono;
     float delay_sig = (delay.Process(delay_input)) * delay_mix;
 
@@ -241,7 +241,6 @@ int main(void) {
   extern_echo_adsr.Init(hw.AudioCallbackRate());
   extern_echo_adsr.SetTime(ADENV_SEG_ATTACK, .05);
   extern_echo_adsr.SetTime(ADENV_SEG_DECAY, .05);
-  extern_echo_adsr.SetTime(ADSR_SEG_RELEASE, .05);
   extern_echo_adsr.SetTime(ADSR_SEG_RELEASE, .05);
   extern_echo_adsr.SetSustainLevel(1.0);
 
